@@ -31,7 +31,32 @@ const App = () => {
   });
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '240px',
+        height: '100%',
+        background: 'rgba(26, 26, 46, 0.75)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '16px',
+        boxSizing: 'border-box',
+        zIndex: 1,
+        backdropFilter: 'blur(4px)',
+      }}>
+        <button style={{
+          padding: '8px 16px',
+          background: '#e94560',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+        }}>
+          Button
+        </button>
+      </div>
       <Map
         initialViewState={{
           longitude: -122.4,
