@@ -1,13 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-
+import os
+from config import settings
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",
-    "localhost:5173"
-]
+origins = ["http://localhost:5173", "localhost:5173"]
 
 
 app.add_middleware(
@@ -15,10 +13,19 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 
-@app.get("/")
-async def root() -> dict:
-    return {"hello": "Hello World"}
+@app.post("/uploadfile")
+async def create_upload_file(file: UploadFile):
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    dest = os.path.join(settings.data_root, file.filename)
+
+    with open(dest, "xb") as f:
+        f.write(await file.read())
+
+    return {"filename": file.filename}

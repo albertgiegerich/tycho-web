@@ -1,3 +1,5 @@
 backend/__pycache__
 frontend/node_modules
 .venv
+.env
+data

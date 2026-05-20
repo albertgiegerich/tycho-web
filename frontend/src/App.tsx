@@ -1,10 +1,8 @@
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { type DeckProps } from "deck.gl";
 import Map, { useControl } from 'react-map-gl/maplibre';
-
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -20,6 +18,20 @@ const App = () => {
     })();
   }, [])
 
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      return
+    };
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    await fetch('http://localhost:8000/uploadfile', { method: 'POST', body: formData });
+  }, []);
+
   const scatterplotLayer = new ScatterplotLayer({
     id: 'bart-stations',
     data: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/bart-stations.json',
@@ -29,6 +41,7 @@ const App = () => {
     getPosition: d => d.coordinates,
     getColor: [255, 0, 0],
   });
+
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
@@ -56,6 +69,7 @@ const App = () => {
         }}>
           Button
         </button>
+        <input type="file" onChange={handleFileChange} style={{ marginTop: '12px', color: '#fff' }} />
       </div>
       <Map
         initialViewState={{
