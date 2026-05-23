@@ -1,7 +1,6 @@
-backend/__pycache__
+**/__pycache__
 frontend/node_modules
 .venv
 .env
 data
 pgdata
-backend/alembic/__pycache__
