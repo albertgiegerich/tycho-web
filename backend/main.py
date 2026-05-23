@@ -2,6 +2,19 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from config import settings
+from sqlalchemy.engine import URL
+
+APP_DATABASE_URL = URL.create(
+    drivername="postgresql",
+    username=settings.db_user,
+    password=settings.db_password,
+    host=settings.db_host,
+    port=settings.db_port,
+    database=settings.db_name,
+)
+
+
+from sqlalchemy import create_engine
 
 app = FastAPI()
 
@@ -15,6 +28,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+db_engine = create_engine(APP_DATABASE_URL)
 
 
 @app.post("/uploadfile")
