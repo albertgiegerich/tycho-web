@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from config import settings
@@ -6,8 +6,8 @@ from sqlalchemy.engine import URL
 
 APP_DATABASE_URL = URL.create(
     drivername="postgresql",
-    username=settings.db_user,
-    password=settings.db_password,
+    username=settings.db_user_app,
+    password=settings.db_password_app,
     host=settings.db_host,
     port=settings.db_port,
     database=settings.db_name,
@@ -15,6 +15,8 @@ APP_DATABASE_URL = URL.create(
 
 
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from models import File
 
 app = FastAPI()
 
@@ -42,5 +44,10 @@ async def create_upload_file(file: UploadFile):
 
     with open(dest, "xb") as f:
         f.write(await file.read())
+
+    with Session(db_engine) as session:
+        db_file = File(path=file.filename)
+        session.add(db_file)
+        session.commit()
 
     return {"filename": file.filename}
