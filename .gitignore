@@ -5,3 +5,4 @@ frontend/src/generated
 .env
 data
 pgdata
+backend/test_images
