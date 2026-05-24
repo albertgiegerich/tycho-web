@@ -29,7 +29,7 @@ const App = () => {
     const formData = new FormData();
     formData.append('file', file);
 
-    await fetch('http://localhost:8000/uploadfile', { method: 'POST', body: formData });
+    await fetch('http://localhost:8000/files', { method: 'POST', body: formData });
   }, []);
 
   const scatterplotLayer = new ScatterplotLayer({

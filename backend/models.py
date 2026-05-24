@@ -6,7 +6,7 @@ class Base(DeclarativeBase):
     pass
 
 
-class File(Base):
+class FileRecord(Base):
     __tablename__ = "file"
 
     id: Mapped[int] = mapped_column(primary_key=True)
