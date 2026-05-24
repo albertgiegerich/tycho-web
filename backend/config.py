@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    environment: str
     data_root: str
     db_user_admin: str
     db_password_admin: str

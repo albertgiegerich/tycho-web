@@ -1,15 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
+from backend.services.file_storage import FileStorage, LocalFileStorage, S3FileStorage
 from fastapi import Depends
-from backend.database import engine
 from backend.models import FileRecord
-from sqlalchemy.orm import Session
 from backend.config import settings
 from fastapi import HTTPException
 from fastapi import UploadFile
 from fastapi import APIRouter
-import os
+import uuid
 
 router = APIRouter(
     prefix="/files",
@@ -20,17 +19,27 @@ router = APIRouter(
 DbSession = Annotated[AsyncSession, Depends(get_session)]
 
 
+def get_file_storage() -> FileStorage:
+    if settings.environment == "local":
+        return LocalFileStorage()
+
+    return S3FileStorage()
+
+
+FileStorageDep = Annotated[FileStorage, Depends(get_file_storage)]
+
+
 @router.post("/")
-async def upload(file: UploadFile, session: DbSession):
+async def upload(file: UploadFile, session: DbSession, storage: FileStorageDep):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
-    dest = os.path.join(settings.data_root, file.filename)
+    id = uuid.uuid4()
+    path = f"{id}/{id}"
 
-    with open(dest, "xb") as f:
-        f.write(await file.read())
+    await storage.save(file, path)
 
-    file_record = FileRecord(path=file.filename)
+    file_record = FileRecord(id=id, path=path, name=file.filename)
     session.add(file_record)
     await session.commit()
 
