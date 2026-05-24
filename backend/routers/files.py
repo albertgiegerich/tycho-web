@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
 from fastapi import Depends
@@ -16,7 +17,7 @@ router = APIRouter(
 )
 
 
-DbSession = Annotated[Session, Depends(get_session)]
+DbSession = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.post("/")
@@ -31,6 +32,6 @@ async def upload(file: UploadFile, session: DbSession):
 
     file_record = FileRecord(path=file.filename)
     session.add(file_record)
-    session.commit()
+    await session.commit()
 
     return {"filename": file.filename}
