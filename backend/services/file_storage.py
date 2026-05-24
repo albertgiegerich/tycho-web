@@ -1,6 +1,5 @@
 import shutil
 from typing import Iterator
-from typing import Generator
 from backend.config import settings
 from fastapi import UploadFile
 from typing import Protocol

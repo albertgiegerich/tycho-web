@@ -13,7 +13,7 @@ function DeckGLOverlay(props: DeckProps) {
 const App = () => {
   useEffect(() => {
     (async () => {
-      const response = await fetch('http://localhost:8000')
+      const response = await fetch('http://localhost:8000/files')
       console.log(await response.json());
     })();
   }, [])

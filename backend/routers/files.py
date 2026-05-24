@@ -1,3 +1,8 @@
+from backend.schemas import FileRecordResponse
+from typing import cast
+from sqlalchemy import Sequence
+from sqlalchemy.sql import select
+from fastapi.responses import FileResponse
 from backend.services.file_storage import get_file_storage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
@@ -32,6 +37,14 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
         raise HTTPException(status_code=404, detail="File not found")
 
     file_path = await file_store.get(file_record.path)
+
+    return FileResponse(file_path)
+
+
+@router.get("/", response_model=list[FileRecordResponse])
+async def get(session: DbSession):
+    result = await session.execute(select(FileRecord))
+    return result.scalars().all()
 
 
 @router.post("/")
