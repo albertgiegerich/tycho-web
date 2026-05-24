@@ -1,8 +1,9 @@
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { type DeckProps } from "deck.gl";
 import Map, { useControl } from 'react-map-gl/maplibre';
+import type { FileRecordResponse } from "./generated";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -11,11 +12,22 @@ function DeckGLOverlay(props: DeckProps) {
 }
 
 const App = () => {
+
+  const [files, setFiles] = useState<FileRecordResponse[]>([]);
+
   useEffect(() => {
-    (async () => {
+
+
+    const fetchFiles = async () => {
       const response = await fetch('http://localhost:8000/files')
-      console.log(await response.json());
-    })();
+
+      const fileRecords: FileRecordResponse[] = await response.json();
+
+      setFiles(fileRecords);
+      console.log('file records', fileRecords);
+    };
+
+    fetchFiles()
   }, [])
 
 

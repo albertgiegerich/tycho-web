@@ -1,5 +1,6 @@
 **/__pycache__
 frontend/node_modules
+frontend/src/generated
 .venv
 .env
 data
