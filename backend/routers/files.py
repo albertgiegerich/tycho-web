@@ -20,7 +20,7 @@ DbSession = Annotated[Session, Depends(get_session)]
 
 
 @router.post("/")
-async def upload(file: UploadFile, session: Session = Depends(get_session)):
+async def upload(file: UploadFile, session: DbSession):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
