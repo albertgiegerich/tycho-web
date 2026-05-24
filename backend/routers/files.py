@@ -1,3 +1,5 @@
+from fastapi import Response
+from backend.services.geotiff import convert_geotiff_to_png
 from backend.schemas import FileRecordResponse
 from typing import cast
 from sqlalchemy import Sequence
@@ -38,7 +40,9 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
 
     file_path = await file_store.get(file_record.path)
 
-    return FileResponse(file_path)
+    file_bytes = convert_geotiff_to_png(file_path)
+
+    return Response(file_bytes)
 
 
 @router.get("/", response_model=list[FileRecordResponse])

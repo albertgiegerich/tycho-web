@@ -14,6 +14,7 @@ function DeckGLOverlay(props: DeckProps) {
 const App = () => {
 
   const [files, setFiles] = useState<FileRecordResponse[]>([]);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   useEffect(() => {
 
@@ -24,7 +25,6 @@ const App = () => {
       const fileRecords: FileRecordResponse[] = await response.json();
 
       setFiles(fileRecords);
-      console.log('file records', fileRecords);
     };
 
     fetchFiles()
@@ -54,6 +54,12 @@ const App = () => {
     getColor: [255, 0, 0],
   });
 
+  const onClickFile = useCallback(async (fileId: string) => {
+    setSelectedFileId(fileId);
+
+    const response = await fetch(`http://localhost:8000/files/${fileId}`)
+  }, []);
+
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
@@ -71,17 +77,23 @@ const App = () => {
         zIndex: 1,
         backdropFilter: 'blur(4px)',
       }}>
-        <button style={{
-          padding: '8px 16px',
-          background: '#e94560',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}>
-          Button
-        </button>
+
         <input type="file" onChange={handleFileChange} style={{ marginTop: '12px', color: '#fff' }} />
+        {
+          files.map(f => (
+            <button
+              onClick={() => onClickFile(f.id)}
+              key={f.id}
+              style={{
+                padding: '8px 16px',
+                background: '#e94560',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}>{f.name}</button>
+          ))
+        }
       </div>
       <Map
         initialViewState={{
@@ -93,7 +105,7 @@ const App = () => {
       >
         <DeckGLOverlay layers={[scatterplotLayer]} />
       </Map>
-    </div>
+    </div >
   )
 }
 
