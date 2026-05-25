@@ -1,3 +1,4 @@
+import rasterio
 from fastapi import Response
 from backend.services.geotiff import convert_geotiff_to_png
 from backend.schemas import FileRecordResponse
@@ -42,7 +43,7 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
 
     file_bytes = convert_geotiff_to_png(file_path)
 
-    return Response(file_bytes)
+    return Response(file_bytes, media_type="image/png")
 
 
 @router.get("/", response_model=list[FileRecordResponse])
@@ -61,7 +62,22 @@ async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep)
 
     await file_store.save(file, path)
 
-    file_record = FileRecord(id=id, path=path, name=file.filename)
+    file_path = await file_store.get(path)
+
+    with rasterio.open(file_path) as dataset:
+        bounds = dataset.bounds
+        crs = dataset.crs.to_string()
+
+    file_record = FileRecord(
+        id=id,
+        path=path,
+        name=file.filename,
+        bounding_box_left=bounds.left,
+        bounding_box_bottom=bounds.bottom,
+        bounding_box_right=bounds.right,
+        bounding_box_top=bounds.top,
+        crs=crs,
+    )
     session.add(file_record)
     await session.commit()
 

@@ -13,6 +13,7 @@ export default defineConfig([
       js.configs.recommended,
       tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
+      { rules: { 'react-hooks/exhaustive-deps': 'error' } },
       reactRefresh.configs.vite,
     ],
     languageOptions: {

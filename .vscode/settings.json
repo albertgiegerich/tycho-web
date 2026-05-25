@@ -1,6 +1,6 @@
 {
     "files.exclude": {
         "**/__pycache__": true,
-        "backend/.venv": true
+        "backend/.venv": true,
     }
 }

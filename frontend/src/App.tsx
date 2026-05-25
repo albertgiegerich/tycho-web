@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
-import { ScatterplotLayer } from '@deck.gl/layers';
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { BitmapLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { type DeckProps } from "deck.gl";
 import Map, { useControl } from 'react-map-gl/maplibre';
@@ -54,10 +54,19 @@ const App = () => {
     getColor: [255, 0, 0],
   });
 
+  const selectedFile = files.find(f => f.id === selectedFileId);
+
+  const bitmapLayer = useMemo(() => {
+    console.log(selectedFile);
+    return selectedFile ? new BitmapLayer({
+      id: 'geotiff-bitmap',
+      image: `http://localhost:8000/files/${selectedFileId}`,
+      bounds: [selectedFile.bounding_box_left, selectedFile.bounding_box_bottom, selectedFile.bounding_box_right, selectedFile.bounding_box_top],
+    }) : null
+  }, [selectedFile, selectedFileId]);
+
   const onClickFile = useCallback(async (fileId: string) => {
     setSelectedFileId(fileId);
-
-    const response = await fetch(`http://localhost:8000/files/${fileId}`)
   }, []);
 
 
@@ -103,7 +112,7 @@ const App = () => {
         }}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
       >
-        <DeckGLOverlay layers={[scatterplotLayer]} />
+        <DeckGLOverlay layers={[scatterplotLayer, ...(bitmapLayer ? [bitmapLayer] : [])]} />
       </Map>
     </div >
   )
