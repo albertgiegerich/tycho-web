@@ -2,5 +2,12 @@
     "files.exclude": {
         "**/__pycache__": true,
         "backend/.venv": true,
+    },
+    "editor.formatOnSave": true,
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     }
 }
