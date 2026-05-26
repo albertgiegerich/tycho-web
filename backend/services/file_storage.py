@@ -1,3 +1,4 @@
+from typing import override
 import shutil
 from typing import Iterator
 from backend.config import settings
@@ -24,6 +25,7 @@ class LocalFileStore(FileStore):
     def __init__(self, tmp_dir: str):
         self.tmp_dir = tmp_dir
 
+    @override
     async def save(self, file: UploadFile, path: str):
         dest = os.path.join(settings.data_root, path)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -31,6 +33,7 @@ class LocalFileStore(FileStore):
         with open(dest, "xb") as f:
             f.write(await file.read())
 
+    @override
     async def get(self, path: str) -> str:
         src = os.path.join(settings.data_root, path)
         dest = os.path.join(self.tmp_dir, os.path.basename(path))
@@ -40,8 +43,10 @@ class LocalFileStore(FileStore):
 
 
 class S3FileStore(FileStore):
+    @override
     async def save(self, file: UploadFile, path: str):
         raise NotImplementedError
 
+    @override
     async def get(self, path: str) -> str:
         raise NotImplementedError
