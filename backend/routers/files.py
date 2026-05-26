@@ -49,7 +49,22 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
 @router.get("/", response_model=list[FileRecordResponse])
 async def get(session: DbSession):
     result = await session.execute(select(FileRecord))
-    return result.scalars().all()
+    files = result.scalars().all()
+
+    return map(
+        lambda f: FileRecordResponse(
+            id=f.id,
+            name=f.name,
+            bounds=(
+                f.bounding_box_left,
+                f.bounding_box_bottom,
+                f.bounding_box_right,
+                f.bounding_box_top,
+            ),
+            crs=f.crs,
+        ),
+        files,
+    )
 
 
 @router.post("/")

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { BitmapLayer, ScatterplotLayer } from '@deck.gl/layers';
+import { BitmapLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { type DeckProps } from "deck.gl";
-import Map, { useControl } from 'react-map-gl/maplibre';
+import { Layer, type DeckProps } from "deck.gl";
+import Map, { useControl, type LngLat } from 'react-map-gl/maplibre';
 import type { FileRecordResponse } from "./generated";
 
 function DeckGLOverlay(props: DeckProps) {
@@ -11,10 +11,12 @@ function DeckGLOverlay(props: DeckProps) {
   return null;
 }
 
+
 const App = () => {
 
   const [files, setFiles] = useState<FileRecordResponse[]>([]);
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [selectedLatLng, setSelectedLatLng] = useState<LngLat | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileRecordResponse | null>(null);
 
   useEffect(() => {
 
@@ -44,31 +46,29 @@ const App = () => {
     await fetch('http://localhost:8000/files', { method: 'POST', body: formData });
   }, []);
 
-  const scatterplotLayer = new ScatterplotLayer({
-    id: 'bart-stations',
-    data: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/bart-stations.json',
-    getRadius: d => Math.sqrt(d.entries),
-    radiusScale: 6,
-    radiusMinPixels: 4,
-    getPosition: d => d.coordinates,
-    getColor: [255, 0, 0],
-  });
 
-  const selectedFile = files.find(f => f.id === selectedFileId);
+  const layers: Layer[] = useMemo(() => {
 
-  const bitmapLayer = useMemo(() => {
-    console.log(selectedFile);
-    return selectedFile ? new BitmapLayer({
-      id: 'geotiff-bitmap',
-      image: `http://localhost:8000/files/${selectedFileId}`,
-      bounds: [selectedFile.bounding_box_left, selectedFile.bounding_box_bottom, selectedFile.bounding_box_right, selectedFile.bounding_box_top],
-    }) : null
-  }, [selectedFile, selectedFileId]);
+    if (selectedFile) {
+      return [new BitmapLayer({
+        id: 'geotiff-bitmap',
+        image: `http://localhost:8000/files/${selectedFile.id}`,
+        bounds: selectedFile.bounds,
+      })]
+    }
+
+    return [];
+  }, [selectedFile]);
+
 
   const onClickFile = useCallback(async (fileId: string) => {
-    setSelectedFileId(fileId);
-  }, []);
+    const file = files.find(f => f.id === fileId);
 
+    if (file) {
+      setSelectedFile(file);
+    }
+
+  }, [files]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
@@ -78,7 +78,7 @@ const App = () => {
         left: 0,
         width: '240px',
         height: '100%',
-        background: 'rgba(26, 26, 46, 0.75)',
+        background: 'rgba(10, 10, 12, 0.75)',
         display: 'flex',
         flexDirection: 'column',
         padding: '16px',
@@ -88,6 +88,12 @@ const App = () => {
       }}>
 
         <input type="file" onChange={handleFileChange} style={{ marginTop: '12px', color: '#fff' }} />
+        {selectedLatLng && (
+          <div style={{ color: '#fff', fontSize: '12px', marginTop: '12px' }}>
+            <div>Lat: {selectedLatLng.lat.toFixed(6)}</div>
+            <div>Lng: {selectedLatLng.lng.toFixed(6)}</div>
+          </div>
+        )}
         {
           files.map(f => (
             <button
@@ -111,8 +117,9 @@ const App = () => {
           zoom: 10
         }}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        onClick={e => setSelectedLatLng(e.lngLat)}
       >
-        <DeckGLOverlay layers={[scatterplotLayer, ...(bitmapLayer ? [bitmapLayer] : [])]} />
+        <DeckGLOverlay layers={layers} />
       </Map>
     </div >
   )
