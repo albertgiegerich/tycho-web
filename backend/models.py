@@ -11,8 +11,8 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
-class FileRecord(Base):
-    __tablename__ = "file"
+class Raster(Base):
+    __tablename__ = "raster"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

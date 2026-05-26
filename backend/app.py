@@ -1,4 +1,4 @@
-from backend.routers import files
+from backend.routers import rasters
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,4 +15,4 @@ app.add_middleware(
 )
 
 
-app.include_router(files.router)
+app.include_router(rasters.router)

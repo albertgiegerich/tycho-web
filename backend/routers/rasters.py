@@ -1,7 +1,7 @@
 import rasterio
 from fastapi import Response
 from backend.services.geotiff import convert_geotiff_to_png
-from backend.schemas import FileRecordResponse
+from backend.schemas import RasterResponse
 from typing import cast
 from sqlalchemy import Sequence
 from sqlalchemy.sql import select
@@ -12,7 +12,7 @@ from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
 from backend.services.file_storage import FileStore, LocalFileStore, S3FileStore
 from fastapi import Depends
-from backend.models import FileRecord
+from backend.models import Raster
 from backend.config import settings
 from fastapi import HTTPException
 from fastapi import UploadFile
@@ -21,8 +21,8 @@ import uuid
 from uuid import UUID
 
 router = APIRouter(
-    prefix="/files",
-    tags=["files"],
+    prefix="/rasters",
+    tags=["raster"],
 )
 
 
@@ -34,25 +34,25 @@ FileStoreDep = Annotated[FileStore, Depends(get_file_storage)]
 
 @router.get("/{id}")
 async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
-    file_record = await session.get(FileRecord, id)
+    raster = await session.get(Raster, id)
 
-    if file_record is None:
+    if raster is None:
         raise HTTPException(status_code=404, detail="File not found")
 
-    file_path = await file_store.get(file_record.path)
+    file_path = await file_store.get(raster.path)
 
     file_bytes = convert_geotiff_to_png(file_path)
 
     return Response(file_bytes, media_type="image/png")
 
 
-@router.get("/", response_model=list[FileRecordResponse])
+@router.get("/", response_model=list[RasterResponse])
 async def get(session: DbSession):
-    result = await session.execute(select(FileRecord))
-    files = result.scalars().all()
+    result = await session.execute(select(Raster))
+    rasters = result.scalars().all()
 
     return map(
-        lambda f: FileRecordResponse(
+        lambda f: RasterResponse(
             id=f.id,
             name=f.name,
             bounds=(
@@ -63,7 +63,7 @@ async def get(session: DbSession):
             ),
             crs=f.crs,
         ),
-        files,
+        rasters,
     )
 
 
@@ -77,13 +77,13 @@ async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep)
 
     await file_store.save(file, path)
 
-    file_path = await file_store.get(path)
+    raster_path = await file_store.get(path)
 
-    with rasterio.open(file_path) as dataset:
+    with rasterio.open(raster_path) as dataset:
         bounds = dataset.bounds
         crs = dataset.crs.to_string()
 
-    file_record = FileRecord(
+    raster = Raster(
         id=id,
         path=path,
         name=file.filename,
@@ -93,7 +93,7 @@ async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep)
         bounding_box_top=bounds.top,
         crs=crs,
     )
-    session.add(file_record)
+    session.add(raster)
     await session.commit()
 
     return {"filename": file.filename}

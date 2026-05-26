@@ -3,7 +3,7 @@ import { BitmapLayer } from '@deck.gl/layers';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { Layer, type DeckProps } from "deck.gl";
 import Map, { useControl, type LngLat } from 'react-map-gl/maplibre';
-import type { FileRecordResponse } from "./generated";
+import type { RasterResponse } from "./generated";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -14,19 +14,19 @@ function DeckGLOverlay(props: DeckProps) {
 
 const App = () => {
 
-  const [files, setFiles] = useState<FileRecordResponse[]>([]);
+  const [rasters, setRasters] = useState<RasterResponse[]>([]);
   const [selectedLatLng, setSelectedLatLng] = useState<LngLat | null>(null);
-  const [selectedFile, setSelectedFile] = useState<FileRecordResponse | null>(null);
+  const [selectedRaster, setSelectedRaster] = useState<RasterResponse | null>(null);
 
   useEffect(() => {
 
 
     const fetchFiles = async () => {
-      const response = await fetch('http://localhost:8000/files')
+      const response = await fetch('http://localhost:8000/rasters')
 
-      const fileRecords: FileRecordResponse[] = await response.json();
+      const rasters: RasterResponse[] = await response.json();
 
-      setFiles(fileRecords);
+      setRasters(rasters);
     };
 
     fetchFiles()
@@ -43,32 +43,32 @@ const App = () => {
     const formData = new FormData();
     formData.append('file', file);
 
-    await fetch('http://localhost:8000/files', { method: 'POST', body: formData });
+    await fetch('http://localhost:8000/rasters', { method: 'POST', body: formData });
   }, []);
 
 
   const layers: Layer[] = useMemo(() => {
 
-    if (selectedFile) {
+    if (selectedRaster) {
       return [new BitmapLayer({
         id: 'geotiff-bitmap',
-        image: `http://localhost:8000/files/${selectedFile.id}`,
-        bounds: selectedFile.bounds,
+        image: `http://localhost:8000/rasters/${selectedRaster.id}`,
+        bounds: selectedRaster.bounds,
       })]
     }
 
     return [];
-  }, [selectedFile]);
+  }, [selectedRaster]);
 
 
   const onClickFile = useCallback(async (fileId: string) => {
-    const file = files.find(f => f.id === fileId);
+    const file = rasters.find(f => f.id === fileId);
 
     if (file) {
-      setSelectedFile(file);
+      setSelectedRaster(file);
     }
 
-  }, [files]);
+  }, [rasters]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
@@ -95,7 +95,7 @@ const App = () => {
           </div>
         )}
         {
-          files.map(f => (
+          rasters.map(f => (
             <button
               onClick={() => onClickFile(f.id)}
               key={f.id}

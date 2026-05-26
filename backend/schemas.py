@@ -2,7 +2,7 @@ import uuid
 from pydantic import BaseModel
 
 
-class FileRecordResponse(BaseModel):
+class RasterResponse(BaseModel):
     id: uuid.UUID
     name: str
     bounds: tuple[float, float, float, float]
