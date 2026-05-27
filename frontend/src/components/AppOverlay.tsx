@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
 import { listRasters, uploadRaster } from "../generated/sdk.gen";
 import type { RasterResponse } from "../generated";
+import MapClickHandler from "./MapClickHandler";
+import type { MapMouseEvent } from "maplibre-gl";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -13,7 +15,7 @@ function DeckGLOverlay(props: DeckProps) {
 
 const AppOverlay = () => {
   const [rasters, setRasters] = useState<RasterResponse[]>([]);
-  const [selectedLatLng] = useState<LngLat | null>(null);
+  const [selectedLngLat, setSelectedLngLat] = useState<LngLat | null>(null);
   const [selectedRaster, setSelectedRaster] = useState<RasterResponse | null>(
     null,
   );
@@ -58,6 +60,10 @@ const AppOverlay = () => {
     return [];
   }, [selectedRaster]);
 
+  const onClickMap = useCallback((e: MapMouseEvent) => {
+    setSelectedLngLat(e.lngLat);
+  }, []);
+
   const onClickFile = useCallback(
     async (fileId: string) => {
       const raster = rasters.find((f) => f.id === fileId);
@@ -92,10 +98,10 @@ const AppOverlay = () => {
           onChange={handleFileChange}
           style={{ marginTop: "12px", color: "#fff" }}
         />
-        {selectedLatLng && (
+        {selectedLngLat && (
           <div style={{ color: "#fff", fontSize: "12px", marginTop: "12px" }}>
-            <div>Lat: {selectedLatLng.lat.toFixed(6)}</div>
-            <div>Lng: {selectedLatLng.lng.toFixed(6)}</div>
+            <div>Lat: {selectedLngLat.lat.toFixed(6)}</div>
+            <div>Lng: {selectedLngLat.lng.toFixed(6)}</div>
           </div>
         )}
         {rasters.map((f) => (
@@ -116,6 +122,7 @@ const AppOverlay = () => {
         ))}
       </div>
       <DeckGLOverlay layers={layers} />
+      <MapClickHandler onClick={onClickMap} />
     </>
   );
 };

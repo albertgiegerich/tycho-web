@@ -11,7 +11,6 @@ const App = () => {
           zoom: 10,
         }}
         mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-        // onClick={e => setSelectedLatLng(e.lngLat)}
       >
         <AppOverlay />
       </Map>
