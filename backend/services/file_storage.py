@@ -2,7 +2,6 @@ from typing import override
 import shutil
 from typing import Iterator
 from backend.config import settings
-from fastapi import UploadFile
 from typing import Protocol
 import os
 import tempfile
@@ -17,7 +16,7 @@ def get_file_storage() -> Iterator[FileStore]:
 
 
 class FileStore(Protocol):
-    async def save(self, file: UploadFile, path: str): ...
+    async def save(self, file_path: str, store_path: str): ...
     async def get(self, path: str) -> str: ...
 
 
@@ -26,12 +25,13 @@ class LocalFileStore(FileStore):
         self.tmp_dir = tmp_dir
 
     @override
-    async def save(self, file: UploadFile, path: str):
-        dest = os.path.join(settings.data_root, path)
+    async def save(self, file_path: str, store_path: str):
+        dest = os.path.join(settings.data_root, store_path)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
 
-        with open(dest, "xb") as f:
-            f.write(await file.read())
+        with open(file_path, "rb") as existing_file:
+            with open(dest, "xb") as new_file:
+                new_file.write(existing_file.read())
 
     @override
     async def get(self, path: str) -> str:
@@ -44,7 +44,7 @@ class LocalFileStore(FileStore):
 
 class S3FileStore(FileStore):
     @override
-    async def save(self, file: UploadFile, path: str):
+    async def save(self, file_path: str, store_path: str):
         raise NotImplementedError
 
     @override

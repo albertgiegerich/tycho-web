@@ -1,19 +1,22 @@
+from rasterio.warp import transform_bounds
+from backend.services.geotiff import reproject_to_4326
+import os
+
+from backend.services.geotiff import convert_to_cog
+import tempfile
+
 import rasterio
 from fastapi import Response
 from backend.services.geotiff import convert_geotiff_to_png
 from backend.schemas import RasterResponse
-from typing import cast
-from sqlalchemy import Sequence
 from sqlalchemy.sql import select
-from fastapi.responses import FileResponse
 from backend.services.file_storage import get_file_storage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
-from backend.services.file_storage import FileStore, LocalFileStore, S3FileStore
+from backend.services.file_storage import FileStore
 from fastapi import Depends
 from backend.models import Raster
-from backend.config import settings
 from fastapi import HTTPException
 from fastapi import UploadFile
 from fastapi import APIRouter
@@ -39,32 +42,56 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
     if raster is None:
         raise HTTPException(status_code=404, detail="File not found")
 
-    file_path = await file_store.get(raster.path)
+    original_file_path = await file_store.get(raster.path)
 
-    file_bytes = convert_geotiff_to_png(file_path)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        reprojected_file_path = os.path.join(tmp_dir, "reprojected.tif")
 
-    return Response(file_bytes, media_type="image/png")
+        with rasterio.open(original_file_path) as original_dataset:
+            if original_dataset.crs == "EPSG:4326":
+                reprojected_file_path = original_file_path
+            else:
+                reproject_to_4326(original_file_path, reprojected_file_path)
+
+        png_file_path = os.path.join(tmp_dir, "png.tif")
+        convert_geotiff_to_png(reprojected_file_path, png_file_path)
+
+        with open(png_file_path, "rb") as f:
+            png_bytes = f.read()
+
+    return Response(png_bytes, media_type="image/png")
 
 
 @router.get("/", response_model=list[RasterResponse], operation_id="listRasters")
-async def get(session: DbSession):
+async def get(session: DbSession) -> list[RasterResponse]:
     result = await session.execute(select(Raster))
     rasters = result.scalars().all()
 
-    return map(
-        lambda f: RasterResponse(
-            id=f.id,
-            name=f.name,
-            bounds=(
-                f.bounding_box_left,
-                f.bounding_box_bottom,
-                f.bounding_box_right,
-                f.bounding_box_top,
-            ),
-            crs=f.crs,
-        ),
-        rasters,
-    )
+    raster_responses: list[RasterResponse] = []
+
+    crs_4326 = "EPSG:4326"
+
+    for raster in rasters:
+        bounds = (
+            raster.bounding_box_left,
+            raster.bounding_box_bottom,
+            raster.bounding_box_right,
+            raster.bounding_box_top,
+        )
+
+        if raster.crs != crs_4326:
+            bounds = transform_bounds(raster.crs, crs_4326, *bounds)
+
+        raster_responses.append(
+            RasterResponse(
+                id=raster.id,
+                name=raster.name,
+                bounds=bounds,
+                crs=crs_4326,
+            )
+        )
+
+    return raster_responses
 
 
 @router.post("/", operation_id="uploadRaster")
@@ -73,19 +100,26 @@ async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep)
         raise HTTPException(status_code=400, detail="No filename provided")
 
     id = uuid.uuid4()
-    path = f"{id}/{id}"
+    store_path = f"{id}/{id}"
 
-    await file_store.save(file, path)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        cog_path = os.path.join(tmp_dir, "cog.tif")
 
-    raster_path = await file_store.get(path)
+        original_file_path = os.path.join(tmp_dir, "original.tif")
+        with open(original_file_path, "wb") as f:
+            f.write(await file.read())
 
-    with rasterio.open(raster_path) as dataset:
-        bounds = dataset.bounds
-        crs = dataset.crs.to_string()
+        convert_to_cog(original_file_path, cog_path)
+
+        await file_store.save(cog_path, store_path)
+
+        with rasterio.open(cog_path) as dataset:
+            bounds = dataset.bounds
+            crs = dataset.crs.to_string()
 
     raster = Raster(
         id=id,
-        path=path,
+        path=store_path,
         name=file.filename,
         bounding_box_left=bounds.left,
         bounding_box_bottom=bounds.bottom,
@@ -95,5 +129,3 @@ async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep)
     )
     session.add(raster)
     await session.commit()
-
-    return {"filename": file.filename}

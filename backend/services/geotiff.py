@@ -1,27 +1,58 @@
-from ast import TypeVar
 from typing import Tuple
 import numpy as np
 import rasterio
-from rasterio.io import MemoryFile
 import numpy.typing as npt
+from rasterio.enums import Resampling
+from rasterio.shutil import copy
+from rasterio.warp import calculate_default_transform, reproject
 
 
-def convert_geotiff_to_png(geotiff_filepath: str) -> bytes:
-    with rasterio.open(geotiff_filepath) as dataset:
+def convert_geotiff_to_png(geotiff_file_path: str, png_file_path: str) -> None:
+    with rasterio.open(geotiff_file_path) as dataset:
         bands = dataset.read([1, 2, 3])
 
         normalized = normalize_to_new_dtype(bands, np.uint8)
 
-        with MemoryFile() as mem_file:
-            with mem_file.open(
-                driver="PNG",
-                height=normalized.shape[1],
-                width=normalized.shape[2],
-                count=3,
-                dtype=np.uint8,
-            ) as dst:
-                dst.write(normalized)
-            return mem_file.read()
+        with rasterio.open(
+            png_file_path,
+            mode="w",
+            driver="PNG",
+            height=normalized.shape[1],
+            width=normalized.shape[2],
+            count=3,
+            dtype=np.uint8,
+        ) as png_dataset:
+            png_dataset.write(normalized)
+
+
+def reproject_to_4326(src_file_path: str, dest_file_path: str) -> None:
+    dst_crs = "EPSG:4326"
+
+    with rasterio.open(src_file_path) as src:
+        transform, width, height = calculate_default_transform(
+            src.crs, dst_crs, src.width, src.height, *src.bounds
+        )
+        kwargs = src.meta.copy()
+        kwargs.update(
+            {"crs": dst_crs, "transform": transform, "width": width, "height": height}
+        )
+
+        with rasterio.open(dest_file_path, "w", **kwargs) as dst:
+            bands = list(range(1, src.count + 1))
+            reproject(
+                source=rasterio.band(src, bands),
+                destination=rasterio.band(dst, bands),
+                src_transform=src.transform,
+                src_crs=src.crs,
+                dst_transform=transform,
+                dst_crs=dst_crs,
+                resampling=Resampling.bilinear,
+            )
+
+
+def convert_to_cog(input_path: str, output_path: str):
+    with rasterio.open(input_path) as dataset:
+        copy(dataset, output_path, driver="COG", compress="deflate")
 
 
 def normalize_to_new_dtype[DType: np.number](
