@@ -1,5 +1,6 @@
 import uuid
 from pydantic import BaseModel
+from backend.models import Raster
 
 
 class RasterResponse(BaseModel):
@@ -9,3 +10,17 @@ class RasterResponse(BaseModel):
     crs: str
 
     model_config = {"from_attributes": True}
+
+    @staticmethod
+    def from_raster(raster: Raster) -> "RasterResponse":
+        return RasterResponse(
+            id=raster.id,
+            name=raster.name,
+            bounds=(
+                raster.bounding_box_left,
+                raster.bounding_box_bottom,
+                raster.bounding_box_right,
+                raster.bounding_box_top,
+            ),
+            crs=raster.crs,
+        )

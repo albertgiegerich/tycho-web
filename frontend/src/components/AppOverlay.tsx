@@ -41,7 +41,12 @@ const AppOverlay = () => {
         return;
       }
 
-      await uploadRaster({ body: { file } });
+      const { data } = await uploadRaster({ body: { file } });
+
+      console.log("uploaded", data);
+      if (data) {
+        setRasters((prevValue) => [...prevValue, data]);
+      }
     },
     [],
   );
