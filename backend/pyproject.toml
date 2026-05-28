@@ -10,6 +10,7 @@ dependencies = [
     "psycopg2-binary>=2.9.12",
     "pydantic-settings>=2.14.1",
     "pyrefly>=1.0.0",
+    "pytest>=9.0.3",
     "rasterio>=1.5.0",
     "sqlalchemy[asyncio]>=2.0.49",
 ]

@@ -1,13 +1,10 @@
 from rasterio.warp import transform_bounds
-from backend.services.geotiff import reproject_to_4326
 import os
 
-from backend.services.geotiff import convert_to_cog
 import tempfile
 
 import rasterio
 from fastapi import Response
-from backend.services.geotiff import convert_geotiff_to_png
 from backend.schemas import RasterResponse
 from sqlalchemy.sql import select
 from backend.services.file_storage import get_file_storage
@@ -23,20 +20,28 @@ from fastapi import APIRouter
 import uuid
 from uuid import UUID
 
+from backend.services.geotiff_service import GeoTiffService, get_geotiff_service
+
+RASTERS_PREFIX = "/rasters"
+
 router = APIRouter(
-    prefix="/rasters",
+    prefix=RASTERS_PREFIX,
     tags=["raster"],
 )
 
 
 DbSession = Annotated[AsyncSession, Depends(get_session)]
-
-
 FileStoreDep = Annotated[FileStore, Depends(get_file_storage)]
+GeoTiffServiceDep = Annotated[GeoTiffService, Depends(get_geotiff_service)]
 
 
 @router.get("/{id}", operation_id="getRaster")
-async def getRaster(id: UUID, session: DbSession, file_store: FileStoreDep) -> Response:
+async def get_raster(
+    id: UUID,
+    session: DbSession,
+    file_store: FileStoreDep,
+    geotiff_service: GeoTiffServiceDep,
+) -> Response:
     raster = await session.get(Raster, id)
 
     if raster is None:
@@ -51,10 +56,12 @@ async def getRaster(id: UUID, session: DbSession, file_store: FileStoreDep) -> R
             if original_dataset.crs == "EPSG:4326":
                 reprojected_file_path = original_file_path
             else:
-                reproject_to_4326(original_file_path, reprojected_file_path)
+                geotiff_service.reproject_to_4326(
+                    original_file_path, reprojected_file_path
+                )
 
         png_file_path = os.path.join(tmp_dir, "png.tif")
-        convert_geotiff_to_png(reprojected_file_path, png_file_path)
+        geotiff_service.convert_geotiff_to_png(reprojected_file_path, png_file_path)
 
         with open(png_file_path, "rb") as f:
             png_bytes = f.read()
@@ -63,7 +70,7 @@ async def getRaster(id: UUID, session: DbSession, file_store: FileStoreDep) -> R
 
 
 @router.get("/", operation_id="listRasters")
-async def listRasters(session: DbSession) -> list[RasterResponse]:
+async def list_rasters(session: DbSession) -> list[RasterResponse]:
     result = await session.execute(select(Raster))
     rasters = result.scalars().all()
 
@@ -95,8 +102,11 @@ async def listRasters(session: DbSession) -> list[RasterResponse]:
 
 
 @router.post("/", operation_id="uploadRaster")
-async def uploadRaster(
-    file: UploadFile, session: DbSession, file_store: FileStoreDep
+async def upload_raster(
+    file: UploadFile,
+    session: DbSession,
+    file_store: FileStoreDep,
+    geotiff_service: GeoTiffServiceDep,
 ) -> RasterResponse:
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -111,7 +121,7 @@ async def uploadRaster(
         with open(original_file_path, "wb") as f:
             f.write(await file.read())
 
-        convert_to_cog(original_file_path, cog_path)
+        geotiff_service.convert_to_cog(original_file_path, cog_path)
 
         await file_store.save(cog_path, store_path)
 

@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import SettingsConfigDict
 from pydantic_settings import BaseSettings
 
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
     db_host: str
     db_port: int
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=os.environ.get("ENV_FILE", ".env"), extra="ignore")
 
 
 settings = Settings()

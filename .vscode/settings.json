@@ -15,5 +15,7 @@
           "source.organizeImports": "explicit",
           "source.unusedImports": "explicit",
         }
-    }
+    },
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["backend"]
 }
