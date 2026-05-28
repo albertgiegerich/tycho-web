@@ -53,7 +53,7 @@ def client(
 EMPTY_UUID = uuid.UUID(int=0)
 
 
-def test_get_raster_returns_png(
+def test_get_raster(
     client: TestClient,
     mock_db_session: AsyncMock,
     mock_file_store: AsyncMock,
@@ -89,6 +89,38 @@ def test_get_raster_returns_png(
     assert response.status_code == 200
     assert response.content == png_bytes
     assert response.headers["content-type"] == "image/png"
+
+
+def test_get_raster_reprojects_if_not_4326(
+    client: TestClient,
+    mock_db_session: AsyncMock,
+    mock_file_store: AsyncMock,
+    mock_geotiff_service: MagicMock,
+) -> None:
+
+    mock_db_session.get.return_value = Raster()
+
+    original_file_path = "original_file_path"
+    mock_file_store.get.return_value = original_file_path
+
+    mock_geotiff_service.get_crs.return_value = "some CRS that isn't 4326"
+
+    with patch("builtins.open", mock_open(read_data=b"")):
+        response = client.get(f"{RASTERS_PREFIX}/{EMPTY_UUID}")
+
+    reproject_to_4326_args, _ = mock_geotiff_service.reproject_to_4326.call_args
+
+    assert reproject_to_4326_args[0] == original_file_path
+    assert Path(reproject_to_4326_args[1]).name == "reprojected.tif"
+
+    convert_geotiff_to_png_args, _ = (
+        mock_geotiff_service.convert_geotiff_to_png.call_args
+    )
+    assert Path(convert_geotiff_to_png_args[0]).name == "reprojected.tif"
+
+    assert Path(convert_geotiff_to_png_args[1]).name == "png.tif"
+
+    assert response.status_code == 200
 
 
 def test_get_raster_not_found(client: TestClient, mock_db_session: AsyncMock) -> None:
