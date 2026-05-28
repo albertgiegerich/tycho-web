@@ -36,7 +36,7 @@ FileStoreDep = Annotated[FileStore, Depends(get_file_storage)]
 
 
 @router.get("/{id}", operation_id="getRaster")
-async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
+async def getRaster(id: UUID, session: DbSession, file_store: FileStoreDep):
     raster = await session.get(Raster, id)
 
     if raster is None:
@@ -63,7 +63,7 @@ async def get(id: UUID, session: DbSession, file_store: FileStoreDep):
 
 
 @router.get("/", response_model=list[RasterResponse], operation_id="listRasters")
-async def get(session: DbSession) -> list[RasterResponse]:
+async def listRasters(session: DbSession) -> list[RasterResponse]:
     result = await session.execute(select(Raster))
     rasters = result.scalars().all()
 
@@ -95,7 +95,7 @@ async def get(session: DbSession) -> list[RasterResponse]:
 
 
 @router.post("/", operation_id="uploadRaster")
-async def upload(file: UploadFile, session: DbSession, file_store: FileStoreDep):
+async def uploadRaster(file: UploadFile, session: DbSession, file_store: FileStoreDep):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
