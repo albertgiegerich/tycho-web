@@ -100,7 +100,7 @@ async def uploadRaster(file: UploadFile, session: DbSession, file_store: FileSto
         raise HTTPException(status_code=400, detail="No filename provided")
 
     id = uuid.uuid4()
-    store_path = f"{id}/{id}"
+    store_path = f"{id}/cog.tif"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         cog_path = os.path.join(tmp_dir, "cog.tif")
