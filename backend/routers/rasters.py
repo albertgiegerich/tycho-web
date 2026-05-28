@@ -52,13 +52,12 @@ async def get_raster(
     with tempfile.TemporaryDirectory() as tmp_dir:
         reprojected_file_path = os.path.join(tmp_dir, "reprojected.tif")
 
-        with rasterio.open(original_file_path) as original_dataset:
-            if original_dataset.crs == "EPSG:4326":
-                reprojected_file_path = original_file_path
-            else:
-                geotiff_service.reproject_to_4326(
-                    original_file_path, reprojected_file_path
-                )
+        original_crs = geotiff_service.get_crs(original_file_path)
+
+        if original_crs == "EPSG:4326":
+            reprojected_file_path = original_file_path
+        else:
+            geotiff_service.reproject_to_4326(original_file_path, reprojected_file_path)
 
         png_file_path = os.path.join(tmp_dir, "png.tif")
         geotiff_service.convert_geotiff_to_png(reprojected_file_path, png_file_path)
