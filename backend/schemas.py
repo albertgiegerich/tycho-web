@@ -7,7 +7,7 @@ class RasterResponse(BaseModel):
     id: uuid.UUID
     name: str
     bounds: tuple[float, float, float, float]
-    crs: str
+    crs: int
 
     model_config = {"from_attributes": True}
 

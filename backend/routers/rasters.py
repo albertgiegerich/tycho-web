@@ -1,9 +1,9 @@
+import rasterio
 from rasterio.warp import transform_bounds
 import os
 
 import tempfile
 
-import rasterio
 from fastapi import Response
 from backend.schemas import RasterResponse
 from sqlalchemy.sql import select
@@ -52,9 +52,10 @@ async def get_raster(
     with tempfile.TemporaryDirectory() as tmp_dir:
         reprojected_file_path = os.path.join(tmp_dir, "reprojected.tif")
 
-        original_crs = geotiff_service.get_crs(original_file_path)
+        with rasterio.open(original_file_path) as original_dataset:
+            original_crs = original_dataset.crs
 
-        if original_crs == "EPSG:4326":
+        if original_crs == 4326:
             reprojected_file_path = original_file_path
         else:
             geotiff_service.reproject_to_4326(original_file_path, reprojected_file_path)
@@ -75,7 +76,7 @@ async def list_rasters(session: DbSession) -> list[RasterResponse]:
 
     raster_responses: list[RasterResponse] = []
 
-    crs_4326 = "EPSG:4326"
+    crs_4326 = 4326
 
     for raster in rasters:
         bounds = (
@@ -124,9 +125,9 @@ async def upload_raster(
 
         await file_store.save(cog_path, store_path)
 
-        with rasterio.open(cog_path) as dataset:
-            bounds = dataset.bounds
-            crs = dataset.crs.to_string()
+        with rasterio.open(cog_path) as cog_dataset:
+            bounds = cog_dataset.bounds
+            crs = cog_dataset.crs.to_epsg()
 
     raster = Raster(
         id=id,

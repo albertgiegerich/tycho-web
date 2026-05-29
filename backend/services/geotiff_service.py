@@ -31,10 +31,6 @@ class GeoTiffService:
             ) as png_dataset:
                 png_dataset.write(normalized)
 
-    def get_crs(self, src_file_path: str) -> str:
-        with rasterio.open(src_file_path) as dataset:
-            return dataset.crs
-
     def reproject_to_4326(self, src_file_path: str, dest_file_path: str) -> None:
         dst_crs = "EPSG:4326"
 

@@ -65,19 +65,24 @@ def test_get_raster(
     original_file_path = "original_file_path"
     mock_file_store.get.return_value = original_file_path
 
-    mock_geotiff_service.get_crs.return_value = "EPSG:4326"
-
     raster_id = uuid.uuid4()
 
+    mock_rasterio_dataset = MagicMock()
+    mock_rasterio_dataset.crs = 4326
+
     png_bytes: bytes = b"png"
-    with patch("builtins.open", mock_open(read_data=png_bytes)):
+    with (
+        patch("backend.routers.rasters.rasterio.open") as mock_rasterio_open,
+        patch("builtins.open", mock_open(read_data=png_bytes)),
+    ):
+        mock_rasterio_open.return_value.__enter__.return_value = mock_rasterio_dataset
         response = client.get(f"{RASTERS_PREFIX}/{raster_id}")
 
     mock_db_session.get.assert_called_once_with(Raster, raster_id)
 
     mock_file_store.get.assert_called_once_with(raster_path)
 
-    mock_geotiff_service.get_crs.assert_called_once_with(original_file_path)
+    mock_rasterio_open.assert_called_once_with(original_file_path)
 
     mock_geotiff_service.reproject_to_4326.assert_not_called()
 
@@ -103,9 +108,14 @@ def test_get_raster_reprojects_if_not_4326(
     original_file_path = "original_file_path"
     mock_file_store.get.return_value = original_file_path
 
-    mock_geotiff_service.get_crs.return_value = "some CRS that isn't 4326"
+    mock_rasterio_dataset = MagicMock()
+    mock_rasterio_dataset.crs = 9999
 
-    with patch("builtins.open", mock_open(read_data=b"")):
+    with (
+        patch("backend.routers.rasters.rasterio.open") as mock_rasterio_open,
+        patch("builtins.open", mock_open(read_data=b"")),
+    ):
+        mock_rasterio_open.return_value.__enter__.return_value = mock_rasterio_dataset
         response = client.get(f"{RASTERS_PREFIX}/{EMPTY_UUID}")
 
     reproject_to_4326_args, _ = mock_geotiff_service.reproject_to_4326.call_args
@@ -121,6 +131,75 @@ def test_get_raster_reprojects_if_not_4326(
     assert Path(convert_geotiff_to_png_args[1]).name == "png.tif"
 
     assert response.status_code == 200
+
+
+def test_list_rasters(client: TestClient, mock_db_session: AsyncMock) -> None:
+    raster_id = uuid.uuid4()
+    raster = Raster(
+        id=raster_id,
+        name="test.tif",
+        crs=4326,
+        bounding_box_left=1.0,
+        bounding_box_bottom=2.0,
+        bounding_box_right=3.0,
+        bounding_box_top=4.0,
+    )
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [raster]
+    mock_db_session.execute.return_value = mock_result
+
+    response = client.get(f"{RASTERS_PREFIX}/")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+
+    assert data[0] == {
+        "id": str(raster_id),
+        "name": "test.tif",
+        "bounds": [1.0, 2.0, 3.0, 4.0],
+        "crs": 4326,
+    }
+
+
+def test_list_rasters_reprojects_bounds_if_not_4326(
+    client: TestClient, mock_db_session: AsyncMock
+) -> None:
+    raster_id = uuid.uuid4()
+    raster = Raster(
+        id=raster_id,
+        name="test.tif",
+        crs=32615,
+        bounding_box_left=1.0,
+        bounding_box_bottom=2.0,
+        bounding_box_right=3.0,
+        bounding_box_top=4.0,
+    )
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [raster]
+    mock_db_session.execute.return_value = mock_result
+
+    transformed_bounds = (10.0, 20.0, 30.0, 40.0)
+
+    with patch(
+        "backend.routers.rasters.transform_bounds", return_value=transformed_bounds
+    ):
+        response = client.get(f"{RASTERS_PREFIX}/")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+
+    assert data[0] == {
+        "id": str(raster_id),
+        "name": "test.tif",
+        "bounds": list(transformed_bounds),
+        "crs": 4326,
+    }
 
 
 def test_get_raster_not_found(client: TestClient, mock_db_session: AsyncMock) -> None:
