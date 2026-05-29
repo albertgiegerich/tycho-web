@@ -2,7 +2,7 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
-import { listRasters, uploadRaster } from "../generated/sdk.gen";
+import { getPixel, listRasters, uploadRaster } from "../generated/sdk.gen";
 import type { RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
@@ -71,9 +71,18 @@ const AppOverlay = () => {
     return [];
   }, [selectedRaster]);
 
-  const onClickMap = useCallback((e: MapMouseEvent) => {
-    setSelectedLngLat(e.lngLat);
-  }, []);
+  const onClickMap = useCallback(
+    (e: MapMouseEvent) => {
+      setSelectedLngLat(e.lngLat);
+      if (selectedRaster) {
+        getPixel({
+          query: { lat: e.lngLat.lat, lng: e.lngLat.lng },
+          path: { id: selectedRaster?.id },
+        });
+      }
+    },
+    [selectedRaster],
+  );
 
   const onSelectRaster = useCallback(
     (e: SelectChangeEvent) => {
