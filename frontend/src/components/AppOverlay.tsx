@@ -6,6 +6,11 @@ import { listRasters, uploadRaster } from "../generated/sdk.gen";
 import type { RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
+import Button from "@mui/material/Button";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select, { type SelectChangeEvent } from "@mui/material/Select";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -53,6 +58,7 @@ const AppOverlay = () => {
 
   const layers: Layer[] = useMemo(() => {
     if (selectedRaster) {
+      console.log("selectedRaster", selectedRaster);
       return [
         new BitmapLayer({
           id: "geotiff-bitmap",
@@ -69,10 +75,9 @@ const AppOverlay = () => {
     setSelectedLngLat(e.lngLat);
   }, []);
 
-  const onClickFile = useCallback(
-    async (fileId: string) => {
-      const raster = rasters.find((f) => f.id === fileId);
-
+  const onSelectRaster = useCallback(
+    (e: SelectChangeEvent) => {
+      const raster = rasters.find((f) => f.id === e.target.value);
       if (raster) {
         setSelectedRaster(raster);
         map?.fitBounds(raster.bounds, { padding: 40 });
@@ -98,33 +103,35 @@ const AppOverlay = () => {
           backdropFilter: "blur(4px)",
         }}
       >
-        <input
-          type="file"
-          onChange={handleFileChange}
-          style={{ marginTop: "12px", color: "#fff" }}
-        />
+        <Button
+          component="label"
+          variant="contained"
+          sx={{ marginTop: "12px" }}
+        >
+          Upload
+          <input type="file" hidden onChange={handleFileChange} />
+        </Button>
         {selectedLngLat && (
           <div style={{ color: "#fff", fontSize: "12px", marginTop: "12px" }}>
             <div>Lat: {selectedLngLat.lat.toFixed(6)}</div>
             <div>Lng: {selectedLngLat.lng.toFixed(6)}</div>
           </div>
         )}
-        {rasters.map((f) => (
-          <button
-            onClick={() => onClickFile(f.id)}
-            key={f.id}
-            style={{
-              padding: "8px 16px",
-              background: "#e94560",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+        <FormControl fullWidth sx={{ marginTop: "12px" }}>
+          <InputLabel sx={{ color: "#fff" }}>Raster</InputLabel>
+          <Select
+            value={selectedRaster?.id ?? ""}
+            label="Raster"
+            onChange={onSelectRaster}
+            sx={{ color: "#fff" }}
           >
-            {f.name}
-          </button>
-        ))}
+            {rasters.map((f) => (
+              <MenuItem key={f.id} value={f.id}>
+                {f.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
       <DeckGLOverlay layers={layers} />
       <MapClickHandler onClick={onClickMap} />
