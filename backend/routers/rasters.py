@@ -1,3 +1,5 @@
+import uuid
+
 import rasterio
 from rasterio.warp import transform_bounds
 import os
@@ -17,7 +19,6 @@ from backend.models import Raster
 from fastapi import HTTPException
 from fastapi import UploadFile
 from fastapi import APIRouter
-import uuid
 from uuid import UUID
 
 from backend.services.geotiff_service import GeoTiffService, get_geotiff_service
@@ -108,19 +109,16 @@ async def upload_raster(
     file_store: FileStoreDep,
     geotiff_service: GeoTiffServiceDep,
 ) -> RasterResponse:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No filename provided")
-
     id = uuid.uuid4()
-    store_path = f"{id}/cog.tif"
+    store_path = f"rasters/{id}/cog.tif"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        cog_path = os.path.join(tmp_dir, "cog.tif")
 
         original_file_path = os.path.join(tmp_dir, "original.tif")
         with open(original_file_path, "wb") as f:
             f.write(await file.read())
 
+        cog_path = os.path.join(tmp_dir, "cog.tif")
         geotiff_service.convert_to_cog(original_file_path, cog_path)
 
         await file_store.save(cog_path, store_path)

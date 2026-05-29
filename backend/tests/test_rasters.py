@@ -1,3 +1,5 @@
+from rasterio.coords import BoundingBox
+import os
 from pathlib import Path
 
 from backend.routers.rasters import RASTERS_PREFIX
@@ -110,7 +112,9 @@ def test_get_raster_reprojects_if_not_4326(
     mock_rasterio_dataset = mocker.MagicMock()
     mock_rasterio_dataset.crs = 9999
 
-    mock_rasterio_open = mocker.patch("backend.routers.rasters.rasterio.open", autospec=True)
+    mock_rasterio_open = mocker.patch(
+        "backend.routers.rasters.rasterio.open", autospec=True
+    )
     mock_rasterio_open.return_value.__enter__.return_value = mock_rasterio_dataset
     mocker.patch("backend.routers.rasters.open", mock_open(read_data=b""))
 
@@ -131,7 +135,9 @@ def test_get_raster_reprojects_if_not_4326(
     assert response.status_code == 200
 
 
-def test_list_rasters(client: TestClient, mock_db_session: AsyncMock, mocker: MockerFixture) -> None:
+def test_list_rasters(
+    client: TestClient, mock_db_session: AsyncMock, mocker: MockerFixture
+) -> None:
     raster_id = uuid.uuid4()
     raster = Raster(
         id=raster_id,
@@ -181,7 +187,9 @@ def test_list_rasters_reprojects_bounds_if_not_4326(
 
     transformed_bounds = (10.0, 20.0, 30.0, 40.0)
 
-    mocker.patch("backend.routers.rasters.transform_bounds", return_value=transformed_bounds)
+    mocker.patch(
+        "backend.routers.rasters.transform_bounds", return_value=transformed_bounds
+    )
 
     response = client.get(f"{RASTERS_PREFIX}/")
 
@@ -196,6 +204,85 @@ def test_list_rasters_reprojects_bounds_if_not_4326(
         "name": "test.tif",
         "bounds": list(transformed_bounds),
         "crs": 4326,
+    }
+
+
+def test_upload_raster(
+    client: TestClient,
+    mock_db_session: AsyncMock,
+    mock_file_store: AsyncMock,
+    mock_geotiff_service: MagicMock,
+    mocker: MockerFixture,
+) -> None:
+
+    fixed_id = uuid.UUID(int=1)
+    mocker.patch("backend.routers.rasters.uuid.uuid4", return_value=fixed_id)
+
+    fake_tmp_path = "tmp"
+
+    mock_tmp = mocker.MagicMock()
+    mock_tmp.__enter__.return_value = fake_tmp_path
+    mocker.patch(
+        "backend.routers.rasters.tempfile.TemporaryDirectory", return_value=mock_tmp
+    )
+
+    mock_open_write = mock_open()
+    mocker.patch("backend.routers.rasters.open", mock_open_write)
+
+    mock_rasterio_open = mocker.MagicMock()
+    mock_dataset = mocker.MagicMock()
+
+    mock_crs = mocker.MagicMock()
+    mock_crs.to_epsg.return_value = 9999
+
+    mock_dataset.crs = mock_crs
+    mock_dataset.bounds = BoundingBox(left=1, bottom=2, right=3, top=4)
+
+    mock_rasterio_open.return_value.__enter__.return_value = mock_dataset
+    mocker.patch("backend.routers.rasters.rasterio.open", mock_rasterio_open)
+
+    geotiff_data = b"geotiff data"
+
+    response = client.post(
+        f"{RASTERS_PREFIX}/",
+        files={"file": ("test.tif", geotiff_data)},
+    )
+
+    original_path = os.path.join(fake_tmp_path, "original.tif")
+    mock_open_write.assert_called_once_with(original_path, "wb")
+
+    mock_open_write.return_value.__enter__.return_value.write.assert_called_once_with(
+        geotiff_data
+    )
+
+    cog_path = os.path.join(fake_tmp_path, "cog.tif")
+    mock_geotiff_service.convert_to_cog.assert_called_once_with(original_path, cog_path)
+
+    save_args, _ = mock_file_store.save.call_args
+
+    assert Path(save_args[0]).name == "cog.tif"
+    assert save_args[1] == f"rasters/{fixed_id}/cog.tif"
+
+    mock_db_session.add.assert_called_once()
+    added_raster = mock_db_session.add.call_args.args[0]
+
+    assert added_raster.id == fixed_id
+    assert added_raster.path == f"rasters/{fixed_id}/cog.tif"
+    assert added_raster.name == "test.tif"
+    assert added_raster.bounding_box_left == 1
+    assert added_raster.bounding_box_bottom == 2
+    assert added_raster.bounding_box_right == 3
+    assert added_raster.bounding_box_top == 4
+    assert added_raster.crs == 9999
+
+    mock_db_session.commit.assert_called_once()
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": str(fixed_id),
+        "name": "test.tif",
+        "bounds": [1.0, 2.0, 3.0, 4.0],
+        "crs": 9999,
     }
 
 
