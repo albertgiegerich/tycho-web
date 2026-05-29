@@ -1,7 +1,6 @@
 import uuid
 
 import rasterio
-from rasterio.warp import transform_bounds
 import os
 
 import tempfile
@@ -24,6 +23,8 @@ from uuid import UUID
 from backend.services.geotiff_service import GeoTiffService, get_geotiff_service
 
 RASTERS_PREFIX = "/rasters"
+COG_REPROJECTED_FILE_NAME = "cog_4326.tif"
+ORIGINAL_FILE_NAME = "original.tif"
 
 router = APIRouter(
     prefix=RASTERS_PREFIX,
@@ -48,21 +49,13 @@ async def get_raster(
     if raster is None:
         raise HTTPException(status_code=404, detail="File not found")
 
-    original_file_path = await file_store.get(raster.path)
+    original_file_path = await file_store.get(
+        os.path.join(raster.path, COG_REPROJECTED_FILE_NAME)
+    )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        reprojected_file_path = os.path.join(tmp_dir, "reprojected.tif")
-
-        with rasterio.open(original_file_path) as original_dataset:
-            original_crs = original_dataset.crs
-
-        if original_crs == 4326:
-            reprojected_file_path = original_file_path
-        else:
-            geotiff_service.reproject_to_4326(original_file_path, reprojected_file_path)
-
         png_file_path = os.path.join(tmp_dir, "png.tif")
-        geotiff_service.convert_geotiff_to_png(reprojected_file_path, png_file_path)
+        geotiff_service.convert_geotiff_to_png(original_file_path, png_file_path)
 
         with open(png_file_path, "rb") as f:
             png_bytes = f.read()
@@ -77,8 +70,6 @@ async def list_rasters(session: DbSession) -> list[RasterResponse]:
 
     raster_responses: list[RasterResponse] = []
 
-    crs_4326 = 4326
-
     for raster in rasters:
         bounds = (
             raster.bounding_box_left,
@@ -87,15 +78,11 @@ async def list_rasters(session: DbSession) -> list[RasterResponse]:
             raster.bounding_box_top,
         )
 
-        if raster.crs != crs_4326:
-            bounds = transform_bounds(raster.crs, crs_4326, *bounds)
-
         raster_responses.append(
             RasterResponse(
                 id=raster.id,
                 name=raster.name,
                 bounds=bounds,
-                crs=crs_4326,
             )
         )
 
@@ -110,22 +97,39 @@ async def upload_raster(
     geotiff_service: GeoTiffServiceDep,
 ) -> RasterResponse:
     id = uuid.uuid4()
-    store_path = f"rasters/{id}/cog.tif"
+    store_path = f"rasters/{id}"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
 
         original_file_path = os.path.join(tmp_dir, "original.tif")
+
         with open(original_file_path, "wb") as f:
             f.write(await file.read())
 
-        cog_path = os.path.join(tmp_dir, "cog.tif")
-        geotiff_service.convert_to_cog(original_file_path, cog_path)
+        # Keep the original data intact. We might want to transform it in some other way in the future
+        await file_store.save(
+            original_file_path, os.path.join(store_path, ORIGINAL_FILE_NAME)
+        )
 
-        await file_store.save(cog_path, store_path)
+        reprojected_path = None
+        with rasterio.open(original_file_path) as original_dataset:
+            if original_dataset.crs.to_epsg() != 4326:
+                reprojected_path = os.path.join(tmp_dir, "reprojected.tif")
+                geotiff_service.reproject_to_4326(original_file_path, reprojected_path)
+
+        cog_path = os.path.join(tmp_dir, "cog.tif")
+
+        geotiff_service.convert_to_cog(
+            reprojected_path if reprojected_path is not None else original_file_path,
+            cog_path,
+        )
+
+        await file_store.save(
+            cog_path, os.path.join(store_path, COG_REPROJECTED_FILE_NAME)
+        )
 
         with rasterio.open(cog_path) as cog_dataset:
             bounds = cog_dataset.bounds
-            crs = cog_dataset.crs.to_epsg()
 
     raster = Raster(
         id=id,
@@ -135,7 +139,6 @@ async def upload_raster(
         bounding_box_bottom=bounds.bottom,
         bounding_box_right=bounds.right,
         bounding_box_top=bounds.top,
-        crs=crs,
     )
 
     response = RasterResponse.from_raster(raster)

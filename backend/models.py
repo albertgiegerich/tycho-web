@@ -1,4 +1,3 @@
-from sqlalchemy import Integer
 from sqlalchemy import Double
 import uuid
 from sqlalchemy.ext.asyncio.session import AsyncAttrs
@@ -23,4 +22,3 @@ class Raster(Base):
     bounding_box_bottom: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_right: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_top: Mapped[float] = mapped_column(Double, nullable=False)
-    crs: Mapped[int] = mapped_column(Integer, nullable=False)

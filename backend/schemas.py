@@ -7,7 +7,6 @@ class RasterResponse(BaseModel):
     id: uuid.UUID
     name: str
     bounds: tuple[float, float, float, float]
-    crs: int
 
     model_config = {"from_attributes": True}
 
@@ -22,5 +21,8 @@ class RasterResponse(BaseModel):
                 raster.bounding_box_right,
                 raster.bounding_box_top,
             ),
-            crs=raster.crs,
         )
+
+
+class RasterPixel(BaseModel):
+    brightness_values: list[float]
