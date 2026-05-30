@@ -26,3 +26,5 @@ class RasterResponse(BaseModel):
 
 class RasterPixel(BaseModel):
     brightness_values: list[float]
+    row: int
+    col: int

@@ -1,3 +1,6 @@
+from backend.config import settings
+from enum import Enum
+
 from sqlalchemy import Double
 import uuid
 from sqlalchemy.ext.asyncio.session import AsyncAttrs
@@ -22,3 +25,11 @@ class Raster(Base):
     bounding_box_bottom: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_right: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_top: Mapped[float] = mapped_column(Double, nullable=False)
+
+    def get_path(self, fileName: RasterFileName):
+        return f"{settings.data_root}/{self.path}/{fileName.value}"
+
+
+class RasterFileName(Enum):
+    COG = "cog_4326.tif"
+    ORIGINAL = "original.tif"

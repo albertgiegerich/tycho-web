@@ -6,3 +6,4 @@ frontend/src/generated
 data
 pgdata
 backend/test_images
+backend/scratch.py
