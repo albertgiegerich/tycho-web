@@ -18,6 +18,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
+import styled from "@emotion/styled";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -170,22 +171,7 @@ const AppOverlay = () => {
 
   return (
     <>
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "240px",
-          height: "100%",
-          background: "rgba(10, 10, 12, 0.75)",
-          display: "flex",
-          flexDirection: "column",
-          padding: "16px",
-          boxSizing: "border-box",
-          zIndex: 1,
-          backdropFilter: "blur(4px)",
-        }}
-      >
+      <SideBar>
         <Button
           component="label"
           variant="contained"
@@ -255,7 +241,7 @@ const AppOverlay = () => {
         >
           Reset
         </Button>
-      </div>
+      </SideBar>
       <DensitySliceDialog
         open={densitySliceDialogOpen}
         onClose={() => setDensitySliceDialogOpen(false)}
@@ -271,5 +257,20 @@ const AppOverlay = () => {
     </>
   );
 };
+
+const SideBar = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100%;
+  background: rgba(10, 10, 12, 0.75);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  box-sizing: border-box;
+  z-index: 1;
+  backdrop-filter: blur(4px);
+`;
 
 export default AppOverlay;
