@@ -108,6 +108,24 @@ async def get_raster(
     return Response(png_bytes, media_type="image/png")
 
 
+@router.delete("/{id}", operation_id="deleteRaster", status_code=204)
+async def delete_raster(
+    id: UUID,
+    session: DbSession,
+    file_store: FileStoreDep,
+):
+    raster = await session.get(Raster, id)
+
+    if raster is None:
+        raise HTTPException(status_code=404, detail="Raster not found")
+
+    for file_name in RasterFileName:
+        await file_store.delete(f"{raster.path}/{file_name.value}")
+
+    await session.delete(raster)
+    await session.commit()
+
+
 @router.get("/", operation_id="listRasters")
 async def list_rasters(session: DbSession) -> list[RasterResponse]:
     result = await session.execute(select(Raster))

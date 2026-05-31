@@ -18,6 +18,7 @@ def get_file_store() -> Iterator[FileStore]:
 class FileStore(Protocol):
     async def save(self, file_path: str, store_path: str): ...
     async def get(self, path: str) -> str: ...
+    async def delete(self, store_path: str): ...
 
 
 class LocalFileStore(FileStore):
@@ -41,6 +42,11 @@ class LocalFileStore(FileStore):
 
         return dest
 
+    @override
+    async def delete(self, store_path: str):
+        dest = os.path.join(settings.data_root, store_path)
+        os.remove(dest)
+
 
 class S3FileStore(FileStore):
     @override
@@ -49,4 +55,8 @@ class S3FileStore(FileStore):
 
     @override
     async def get(self, path: str) -> str:
+        raise NotImplementedError
+
+    @override
+    async def delete(self, store_path: str):
         raise NotImplementedError

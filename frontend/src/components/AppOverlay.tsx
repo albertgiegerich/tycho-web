@@ -3,6 +3,7 @@ import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
 import {
+  deleteRaster,
   getPixel,
   getRaster,
   listRasters,
@@ -146,6 +147,27 @@ const AppOverlay = () => {
     },
     [map, rasters],
   );
+
+  const onDeleteRaster = useCallback(async () => {
+    if (!selectedRaster) {
+      return;
+    }
+
+    await deleteRaster({ path: { id: selectedRaster.id } });
+
+    setRasters((prev) => prev.filter((r) => r.id !== selectedRaster.id));
+
+    setSelectedRaster(null);
+
+    setRasterImageUrl((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return null;
+    });
+  }, [selectedRaster]);
+
   return (
     <>
       <div
@@ -194,6 +216,15 @@ const AppOverlay = () => {
           </Select>
         </FormControl>
         <Button
+          onClick={onDeleteRaster}
+          variant="contained"
+          color="error"
+          sx={{ marginTop: "12px" }}
+          disabled={selectedRaster === null}
+        >
+          Delete
+        </Button>
+        <Button
           onClick={onClickTrueColor}
           variant="contained"
           color="primary"
@@ -214,6 +245,7 @@ const AppOverlay = () => {
         >
           Density Slice
         </Button>
+
         <Button
           onClick={() => setActiveOperations([])}
           variant="contained"
