@@ -8,7 +8,7 @@ import {
   listRasters,
   uploadRaster,
 } from "../generated/sdk.gen";
-import type { RasterOperationId, RasterResponse } from "../generated";
+import type { RasterOperation, RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
 import Button from "@mui/material/Button";
@@ -31,7 +31,7 @@ const AppOverlay = () => {
   );
   const [rasterImageUrl, setRasterImageUrl] = useState<string | null>(null);
 
-  const [activeOperations, setActiveOperations] = useState<RasterOperationId[]>(
+  const [activeOperations, setActiveOperations] = useState<RasterOperation[]>(
     [],
   );
 
@@ -56,10 +56,7 @@ const AppOverlay = () => {
     const updateRasterImageUrl = async () => {
       const { data } = await getRaster({
         path: { id: selectedRaster.id },
-        body: activeOperations.map((op) => ({
-          operation_id: op,
-          parameters: null,
-        })),
+        body: activeOperations,
       });
 
       if (!data) {
@@ -98,11 +95,11 @@ const AppOverlay = () => {
 
   const onClickTrueColor = useCallback(() => {
     setActiveOperations((prevValue) => {
-      if (prevValue.includes("true_color")) {
+      if (prevValue.some((op) => op.id === "true_color")) {
         return prevValue;
       }
 
-      return [...prevValue, "true_color"];
+      return [...prevValue, { id: "true_color" }];
     });
   }, []);
 
@@ -200,7 +197,8 @@ const AppOverlay = () => {
           color="primary"
           sx={{ marginTop: "12px" }}
           disabled={
-            selectedRaster === null || activeOperations.includes("true_color")
+            selectedRaster === null ||
+            activeOperations.some((op) => op.id === "true_color")
           }
         >
           True color

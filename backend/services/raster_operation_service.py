@@ -37,6 +37,10 @@ class RasterOperationService:
     def _apply_operation(
         self, operation: RasterOperation, arr: npt.NDArray[np.float64]
     ) -> npt.NDArray[np.float64]:
-        match operation.operation_id:
+        match operation.id:
             case RasterOperationId.TRUE_COLOR:
                 return self.radiometric_corrector.true_color(arr)
+            case RasterOperationId.DENSITY_SLICE:
+                return self.radiometric_corrector.density_slice(
+                    arr, np.array(operation.breaks)
+                )

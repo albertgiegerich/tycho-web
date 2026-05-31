@@ -1,7 +1,8 @@
 from enum import Enum
 
+from typing import Annotated, Literal
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from backend.models import Raster
 
 
@@ -34,8 +35,18 @@ class RasterPixel(BaseModel):
 
 class RasterOperationId(Enum):
     TRUE_COLOR = "true_color"
+    DENSITY_SLICE = "density_slice"
 
 
-class RasterOperation(BaseModel):
-    operation_id: RasterOperationId
-    parameters: None
+class TrueColorOperation(BaseModel):
+    id: Literal[RasterOperationId.TRUE_COLOR]
+
+
+class DensitySliceOperation(BaseModel):
+    id: Literal[RasterOperationId.DENSITY_SLICE]
+    breaks: list[float]
+
+
+type RasterOperation = Annotated[
+    TrueColorOperation | DensitySliceOperation, Field(discriminator="id")
+]

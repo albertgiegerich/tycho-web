@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import numpy as np
 import numpy.typing as npt
 
@@ -50,3 +52,17 @@ class RadiometricCorrector:
         )
 
         return rgb
+
+    def density_slice(
+        self, image: npt.NDArray[np.float64], breaks: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+
+        step_size = 1.0 / (breaks.size + 1)
+
+        breaks = np.array([0, *breaks, 1])
+        for i, (start, end) in enumerate(pairwise(breaks)):
+            slice_bv = np.float64(i * step_size)
+
+            image = np.where((start <= image) & (image < end), slice_bv, image)
+
+        return image
