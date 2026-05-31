@@ -80,7 +80,7 @@ const AppOverlay = () => {
 
       return [
         new BitmapLayer({
-          id: `geotiff-bitmap-${activeOperations.join("-") || "raw"}`,
+          id: `geotiff-bitmap-${activeOperations.join("-")}`,
           image: `http://localhost:8000/rasters/${selectedRaster.id}?${params}`,
           bounds: selectedRaster.bounds,
           textureParameters: {
