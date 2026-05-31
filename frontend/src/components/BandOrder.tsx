@@ -15,11 +15,13 @@ import { CSS } from "@dnd-kit/utilities";
 import styled from "@emotion/styled";
 import { useCallback, useState } from "react";
 
-const BandBox = ({ id }: { id: string }) => (
-  <BandBoxContainer>{id}</BandBoxContainer>
+const RGB_COLORS = ["red", "green", "blue"];
+
+const BandBox = ({ id, color }: { id: string; color?: string }) => (
+  <BandBoxContainer color={color}>{id}</BandBoxContainer>
 );
 
-const SortableBand = ({ id }: { id: string }) => {
+const SortableBand = ({ id, color }: { id: string; color?: string }) => {
   const {
     attributes,
     listeners,
@@ -40,7 +42,7 @@ const SortableBand = ({ id }: { id: string }) => {
         opacity: isDragging ? 0 : 1,
       }}
     >
-      <BandBox id={id} />
+      <BandBox id={id} color={color} />
     </div>
   );
 };
@@ -91,8 +93,8 @@ export const BandOrder = ({ onChange, bandCount }: BandOrderProps) => {
     >
       <SortableContext items={bands} strategy={rectSortingStrategy}>
         <BandGrid>
-          {bands.map((band) => (
-            <SortableBand key={band} id={band} />
+          {bands.map((band, i) => (
+            <SortableBand key={band} id={band} color={RGB_COLORS[i]} />
           ))}
         </BandGrid>
       </SortableContext>
@@ -107,10 +109,10 @@ const BandGrid = styled.div`
   gap: 6px;
 `;
 
-const BandBoxContainer = styled.div`
+const BandBoxContainer = styled.div<{ color?: string }>`
   padding: 6px 0;
   text-align: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: ${({ color }) => color ?? "rgba(255, 255, 255, 0.1)"};
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
