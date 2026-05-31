@@ -27,11 +27,8 @@ class RasterResponse(BaseModel):
         )
 
 
-type ValidRgbBand = Literal[1] | Literal[2] | Literal[3]
-
-
 class GetRasterRequest(BaseModel):
-    band_order: tuple[ValidRgbBand, ValidRgbBand, ValidRgbBand]
+    band_order: tuple[int, int, int]
     operations: list[RasterOperation]
 
 

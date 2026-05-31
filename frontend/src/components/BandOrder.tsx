@@ -45,7 +45,11 @@ const SortableBand = ({ id }: { id: string }) => {
   );
 };
 
-export const BandOrder = () => {
+interface BandOrderProps {
+  onChange: (bands: [number, number, number]) => void;
+}
+
+export const BandOrder = ({ onChange }: BandOrderProps) => {
   const [bands, setBands] = useState(["1", "2", "3", "4", "5", "6"]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -53,17 +57,28 @@ export const BandOrder = () => {
     setActiveId(String(event.active.id));
   }, []);
 
-  const onDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setBands((prev) => {
-        const oldIndex = prev.indexOf(String(active.id));
-        const newIndex = prev.indexOf(String(over.id));
-        return arrayMove(prev, oldIndex, newIndex);
-      });
-    }
-    setActiveId(null);
-  }, []);
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        setBands((prev) => {
+          const next = arrayMove(
+            prev,
+            prev.indexOf(String(active.id)),
+            prev.indexOf(String(over.id)),
+          );
+
+          const parsed = next.map((n) => Number(n));
+
+          onChange([parsed[0], parsed[1], parsed[2]]);
+
+          return next;
+        });
+      }
+      setActiveId(null);
+    },
+    [onChange],
+  );
 
   return (
     <DndContext

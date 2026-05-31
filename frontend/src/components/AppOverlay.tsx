@@ -39,6 +39,9 @@ const AppOverlay = () => {
     [],
   );
   const [densitySliceDialogOpen, setDensitySliceDialogOpen] = useState(false);
+  const [bandOrder, setBandOrder] = useState<[number, number, number]>([
+    1, 2, 3,
+  ]);
 
   const { current: map } = useMap();
 
@@ -62,7 +65,7 @@ const AppOverlay = () => {
       const { data } = await getRaster({
         path: { id: selectedRaster.id },
         body: {
-          band_order: [1, 2, 3],
+          band_order: bandOrder,
           operations: activeOperations,
         },
       });
@@ -82,7 +85,7 @@ const AppOverlay = () => {
     };
 
     updateRasterImageUrl();
-  }, [selectedRaster, activeOperations]);
+  }, [selectedRaster, activeOperations, bandOrder]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +204,7 @@ const AppOverlay = () => {
             ))}
           </Select>
         </FormControl>
-        <BandOrder />
+        <BandOrder onChange={(bands) => setBandOrder(bands)} />
         <Button
           onClick={onDeleteRaster}
           variant="contained"
