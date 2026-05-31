@@ -3,7 +3,7 @@ import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
 import { getPixel, listRasters, uploadRaster } from "../generated/sdk.gen";
-import type { RasterOperation, RasterResponse } from "../generated";
+import type { RasterOperationId, RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
 import Button from "@mui/material/Button";
@@ -25,7 +25,7 @@ const AppOverlay = () => {
     null,
   );
 
-  const [activeOperations, setActiveOperations] = useState<RasterOperation[]>(
+  const [activeOperations, setActiveOperations] = useState<RasterOperationId[]>(
     [],
   );
 

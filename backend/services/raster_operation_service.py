@@ -6,7 +6,7 @@ import numpy.typing as npt
 from backend.services.radiometric_correction import RadiometricCorrector
 
 
-class RasterOperation(Enum):
+class RasterOperationId(Enum):
     TRUE_COLOR = "true_color"
 
 
@@ -31,7 +31,7 @@ class RasterOperationService:
     def apply_operations(
         self,
         raster_image: npt.NDArray[np.float64],
-        operations: list[RasterOperation],
+        operations: list[RasterOperationId],
     ) -> npt.NDArray[np.float64]:
 
         for operation in operations:
@@ -40,8 +40,8 @@ class RasterOperationService:
         return raster_image
 
     def _apply_operation(
-        self, operation: RasterOperation, arr: npt.NDArray[np.float64]
+        self, operation: RasterOperationId, arr: npt.NDArray[np.float64]
     ) -> npt.NDArray[np.float64]:
         match operation:
-            case RasterOperation.TRUE_COLOR:
+            case RasterOperationId.TRUE_COLOR:
                 return self.radiometric_corrector.true_color(arr)

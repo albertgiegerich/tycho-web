@@ -1,5 +1,5 @@
 from backend.services.raster_operation_service import (
-    RasterOperation,
+    RasterOperationId,
     get_raster_operation_service,
 )
 
@@ -78,7 +78,7 @@ async def get_raster(
     session: DbSession,
     geotiff_service: GeoTiffServiceDep,
     raster_operation_service: RasterOperationServiceDep,
-    operations: list[RasterOperation] | None = Query(default=None),
+    operations: list[RasterOperationId] | None = Query(default=None),
 ) -> Response:
     raster = await session.get(Raster, id)
 
