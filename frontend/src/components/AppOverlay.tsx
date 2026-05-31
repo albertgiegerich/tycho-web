@@ -2,7 +2,12 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
-import { getPixel, listRasters, uploadRaster } from "../generated/sdk.gen";
+import {
+  getPixel,
+  getRaster,
+  listRasters,
+  uploadRaster,
+} from "../generated/sdk.gen";
 import type { RasterOperationId, RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
@@ -24,6 +29,7 @@ const AppOverlay = () => {
   const [selectedRaster, setSelectedRaster] = useState<RasterResponse | null>(
     null,
   );
+  const [rasterImageUrl, setRasterImageUrl] = useState<string | null>(null);
 
   const [activeOperations, setActiveOperations] = useState<RasterOperationId[]>(
     [],
@@ -41,6 +47,37 @@ const AppOverlay = () => {
 
     fetchFiles();
   }, []);
+
+  useEffect(() => {
+    if (!selectedRaster) {
+      return;
+    }
+
+    const updateRasterImageUrl = async () => {
+      const { data } = await getRaster({
+        path: { id: selectedRaster.id },
+        body: activeOperations.map((op) => ({
+          operation_id: op,
+          parameters: null,
+        })),
+      });
+
+      if (!data) {
+        return;
+      }
+
+      const url = URL.createObjectURL(data as Blob);
+      setRasterImageUrl((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return url;
+      });
+    };
+
+    updateRasterImageUrl();
+  }, [selectedRaster, activeOperations]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,17 +107,11 @@ const AppOverlay = () => {
   }, []);
 
   const layers: Layer[] = useMemo(() => {
-    if (selectedRaster) {
-      const params = new URLSearchParams();
-
-      for (const op of activeOperations) {
-        params.append("operations", op);
-      }
-
+    if (selectedRaster && rasterImageUrl) {
       return [
         new BitmapLayer({
-          id: `geotiff-bitmap-${activeOperations.join("-")}`,
-          image: `http://localhost:8000/rasters/${selectedRaster.id}?${params}`,
+          id: `geotiff-bitmap`,
+          image: rasterImageUrl,
           bounds: selectedRaster.bounds,
           textureParameters: {
             minFilter: "linear", // Use bilinear interpolation to blend the pixels when zoomed out
@@ -91,7 +122,7 @@ const AppOverlay = () => {
     }
 
     return [];
-  }, [activeOperations, selectedRaster]);
+  }, [rasterImageUrl, selectedRaster]);
 
   const onClickMap = useCallback(
     (e: MapMouseEvent) => {

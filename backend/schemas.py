@@ -1,3 +1,5 @@
+from enum import Enum
+
 import uuid
 from pydantic import BaseModel
 from backend.models import Raster
@@ -28,3 +30,12 @@ class RasterPixel(BaseModel):
     brightness_values: list[float]
     row: int
     col: int
+
+
+class RasterOperationId(Enum):
+    TRUE_COLOR = "true_color"
+
+
+class RasterOperation(BaseModel):
+    operation_id: RasterOperationId
+    parameters: None

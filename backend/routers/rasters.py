@@ -1,5 +1,4 @@
 from backend.services.raster_operation_service import (
-    RasterOperationId,
     get_raster_operation_service,
 )
 
@@ -12,8 +11,8 @@ from backend.models import RasterFileName
 
 import rasterio
 
-from fastapi import Query, Response, UploadFile
-from backend.schemas import RasterPixel, RasterResponse
+from fastapi import Body, Query, Response, UploadFile
+from backend.schemas import RasterOperation, RasterPixel, RasterResponse
 from backend.services.file_storage import get_file_storage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
@@ -72,13 +71,13 @@ async def get_raster_pixel(
     return RasterPixel(brightness_values=pixel[:, 0, 0], row=row, col=col)
 
 
-@router.get("/{id}", operation_id="getRaster")
+@router.post("/{id}", operation_id="getRaster")
 async def get_raster(
     id: UUID,
     session: DbSession,
     geotiff_service: GeoTiffServiceDep,
     raster_operation_service: RasterOperationServiceDep,
-    operations: list[RasterOperationId] | None = Query(default=None),
+    operations: list[RasterOperation] | None = Body(default=None),
 ) -> Response:
     raster = await session.get(Raster, id)
 

@@ -1,13 +1,8 @@
-from enum import Enum
-
 import numpy as np
 import numpy.typing as npt
 
+from backend.schemas import RasterOperation, RasterOperationId
 from backend.services.radiometric_correction import RadiometricCorrector
-
-
-class RasterOperationId(Enum):
-    TRUE_COLOR = "true_color"
 
 
 def get_raster_operation_service():
@@ -31,7 +26,7 @@ class RasterOperationService:
     def apply_operations(
         self,
         raster_image: npt.NDArray[np.float64],
-        operations: list[RasterOperationId],
+        operations: list[RasterOperation],
     ) -> npt.NDArray[np.float64]:
 
         for operation in operations:
@@ -40,8 +35,8 @@ class RasterOperationService:
         return raster_image
 
     def _apply_operation(
-        self, operation: RasterOperationId, arr: npt.NDArray[np.float64]
+        self, operation: RasterOperation, arr: npt.NDArray[np.float64]
     ) -> npt.NDArray[np.float64]:
-        match operation:
+        match operation.operation_id:
             case RasterOperationId.TRUE_COLOR:
                 return self.radiometric_corrector.true_color(arr)
