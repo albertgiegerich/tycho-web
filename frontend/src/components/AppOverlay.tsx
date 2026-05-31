@@ -80,7 +80,7 @@ const AppOverlay = () => {
 
       return [
         new BitmapLayer({
-          id: "geotiff-bitmap",
+          id: `geotiff-bitmap-${activeOperations.join("-") || "raw"}`,
           image: `http://localhost:8000/rasters/${selectedRaster.id}?${params}`,
           bounds: selectedRaster.bounds,
           textureParameters: {
@@ -171,6 +171,15 @@ const AppOverlay = () => {
           sx={{ marginTop: "12px" }}
         >
           True color
+        </Button>
+        <Button
+          onClick={() => setActiveOperations([])}
+          variant="contained"
+          color="secondary"
+          sx={{ marginTop: "12px" }}
+          disabled={activeOperations.length === 0}
+        >
+          Reset
         </Button>
       </div>
       <DeckGLOverlay layers={layers} />
