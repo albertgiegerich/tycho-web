@@ -19,6 +19,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import styled from "@emotion/styled";
+import { Box } from "@mui/material";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -172,21 +173,17 @@ const AppOverlay = () => {
   return (
     <>
       <SideBar>
-        <Button
-          component="label"
-          variant="contained"
-          sx={{ marginTop: "12px" }}
-        >
+        <Button component="label" variant="contained">
           Upload
           <input type="file" hidden onChange={handleFileChange} />
         </Button>
         {selectedLngLat && (
-          <div style={{ color: "#fff", fontSize: "12px", marginTop: "12px" }}>
+          <div style={{ color: "#fff", fontSize: "12px" }}>
             <div>Lat: {selectedLngLat.lat.toFixed(6)}</div>
             <div>Lng: {selectedLngLat.lng.toFixed(6)}</div>
           </div>
         )}
-        <FormControl fullWidth sx={{ marginTop: "12px" }}>
+        <FormControl fullWidth>
           <InputLabel sx={{ color: "#fff" }}>Raster</InputLabel>
           <Select
             value={selectedRaster?.id ?? ""}
@@ -205,7 +202,6 @@ const AppOverlay = () => {
           onClick={onDeleteRaster}
           variant="contained"
           color="error"
-          sx={{ marginTop: "12px" }}
           disabled={selectedRaster === null}
         >
           Delete
@@ -214,7 +210,6 @@ const AppOverlay = () => {
           onClick={onClickTrueColor}
           variant="contained"
           color="primary"
-          sx={{ marginTop: "12px" }}
           disabled={
             selectedRaster === null ||
             activeOperations.some((op) => op.id === "true_color")
@@ -226,7 +221,6 @@ const AppOverlay = () => {
           onClick={() => setDensitySliceDialogOpen(true)}
           variant="contained"
           color="primary"
-          sx={{ marginTop: "12px" }}
           disabled={selectedRaster === null}
         >
           Density Slice
@@ -236,7 +230,6 @@ const AppOverlay = () => {
           onClick={() => setActiveOperations([])}
           variant="contained"
           color="secondary"
-          sx={{ marginTop: "12px" }}
           disabled={activeOperations.length === 0}
         >
           Reset
@@ -267,6 +260,7 @@ const SideBar = styled.div`
   background: rgba(10, 10, 12, 0.75);
   display: flex;
   flex-direction: column;
+  gap: 12px;
   padding: 16px;
   box-sizing: border-box;
   z-index: 1;
