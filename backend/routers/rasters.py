@@ -13,11 +13,11 @@ import rasterio
 
 from fastapi import Body, Query, Response, UploadFile
 from backend.schemas import RasterOperation, RasterPixel, RasterResponse
-from backend.services.file_storage import get_file_store
+from backend.services.file_store import get_file_store
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
-from backend.services.file_storage import FileStore
+from backend.services.file_store import FileStore
 from fastapi import Depends
 from backend.models import Raster
 from fastapi import HTTPException

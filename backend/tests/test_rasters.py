@@ -20,7 +20,7 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.database import get_session
-from backend.services.file_storage import FileStore, get_file_store
+from backend.services.file_store import FileStore, get_file_store
 
 
 @pytest.fixture
