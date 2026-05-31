@@ -12,24 +12,20 @@ def get_geotiff_service() -> GeoTiffService:
 
 
 class GeoTiffService:
-    def convert_geotiff_to_png(
-        self, geotiff_file_path: str, png_file_path: str
-    ) -> None:
-        with rasterio.open(geotiff_file_path) as dataset:
-            bands = dataset.read([1, 2, 3])
+    def save_as_png(self, rgb: npt.NDArray[np.float64], png_file_path: str) -> None:
 
-            normalized = self.normalize_to_new_dtype(bands, np.uint8)
+        scaled_to_int8 = rgb * np.iinfo(np.uint8).max
 
-            with rasterio.open(
-                png_file_path,
-                mode="w",
-                driver="PNG",
-                height=normalized.shape[1],
-                width=normalized.shape[2],
-                count=3,
-                dtype=np.uint8,
-            ) as png_dataset:
-                png_dataset.write(normalized)
+        with rasterio.open(
+            png_file_path,
+            mode="w",
+            driver="PNG",
+            height=scaled_to_int8.shape[1],
+            width=scaled_to_int8.shape[2],
+            count=3,
+            dtype=np.uint8,
+        ) as png_dataset:
+            png_dataset.write(scaled_to_int8)
 
     def reproject_to_4326(self, src_file_path: str, dest_file_path: str) -> None:
         dst_crs = "EPSG:4326"
@@ -64,34 +60,11 @@ class GeoTiffService:
         with rasterio.open(input_path) as dataset:
             copy(dataset, output_path, driver="COG", compress="deflate")
 
-    def normalize_to_new_dtype[DType: np.number](
-        self,
-        arr: np.ndarray,
-        new_dtype: type[DType],
-        old_min: float | None = None,
-        old_max: float | None = None,
-    ) -> npt.NDArray[DType]:
-        arr_dtype_min, arr_dtype_max = self.get_dtype_min_max(arr.dtype)
-
-        # Default to the min/max values for the array's dtype
-        old_min = arr_dtype_min if old_min is None else old_min
-        old_max = arr_dtype_max if old_max is None else old_max
-
-        new_min, new_max = self.get_dtype_min_max(np.dtype(new_dtype))
-
-        normalized = self.normalize_0_to_1(arr)
-        normalized = normalized * (new_max - new_min) + new_min
-
-        if np.dtype(new_dtype).kind in ("i", "u"):
-            normalized = np.round(normalized)
-
-        return normalized.astype(new_dtype)
-
     def normalize_0_to_1(self, arr: np.ndarray) -> npt.NDArray[np.float64]:
-        dtype_min, dtype_max = self.get_dtype_min_max(arr.dtype)
+        _, dtype_max = self.get_dtype_min_max(arr.dtype)
 
         arr = arr.astype(np.float64)
-        return (arr - dtype_min) / (dtype_max - dtype_min)
+        return arr / dtype_max
 
     def get_dtype_min_max(self, arr_dtype: np.dtype) -> Tuple[int, int]:
         match arr_dtype.kind:

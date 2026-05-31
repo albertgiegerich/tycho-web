@@ -3,7 +3,7 @@ import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
 import { getPixel, listRasters, uploadRaster } from "../generated/sdk.gen";
-import type { RasterResponse } from "../generated";
+import type { RasterOperation, RasterResponse } from "../generated";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
 import Button from "@mui/material/Button";
@@ -23,6 +23,10 @@ const AppOverlay = () => {
   const [selectedLngLat, setSelectedLngLat] = useState<LngLat | null>(null);
   const [selectedRaster, setSelectedRaster] = useState<RasterResponse | null>(
     null,
+  );
+
+  const [activeOperations, setActiveOperations] = useState<RasterOperation[]>(
+    [],
   );
 
   const { current: map } = useMap();
@@ -56,20 +60,39 @@ const AppOverlay = () => {
     [],
   );
 
+  const onClickTrueColor = useCallback(() => {
+    setActiveOperations((prevValue) => {
+      if (prevValue.includes("true_color")) {
+        return prevValue;
+      }
+
+      return [...prevValue, "true_color"];
+    });
+  }, []);
+
   const layers: Layer[] = useMemo(() => {
     if (selectedRaster) {
-      console.log("selectedRaster", selectedRaster);
+      const params = new URLSearchParams();
+
+      for (const op of activeOperations) {
+        params.append("operations", op);
+      }
+
       return [
         new BitmapLayer({
           id: "geotiff-bitmap",
-          image: `http://localhost:8000/rasters/${selectedRaster.id}`,
+          image: `http://localhost:8000/rasters/${selectedRaster.id}?${params}`,
           bounds: selectedRaster.bounds,
+          textureParameters: {
+            minFilter: "linear", // Use bilinear interpolation to blend the pixels when zoomed out
+            magFilter: "nearest", // When zoomed in show the individual pixels without interpolation
+          },
         }),
       ];
     }
 
     return [];
-  }, [selectedRaster]);
+  }, [activeOperations, selectedRaster]);
 
   const onClickMap = useCallback(
     (e: MapMouseEvent) => {
@@ -141,6 +164,14 @@ const AppOverlay = () => {
             ))}
           </Select>
         </FormControl>
+        <Button
+          onClick={onClickTrueColor}
+          variant="contained"
+          color="primary"
+          sx={{ marginTop: "12px" }}
+        >
+          True color
+        </Button>
       </div>
       <DeckGLOverlay layers={layers} />
       <MapClickHandler onClick={onClickMap} />

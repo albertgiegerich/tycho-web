@@ -1,3 +1,8 @@
+from backend.services.raster_operation_service import (
+    RasterOperation,
+    get_raster_operation_service,
+)
+
 import tempfile
 import uuid
 
@@ -6,7 +11,6 @@ from sqlalchemy import select
 from backend.models import RasterFileName
 
 import rasterio
-
 
 from fastapi import Query, Response, UploadFile
 from backend.schemas import RasterPixel, RasterResponse
@@ -23,6 +27,7 @@ from uuid import UUID
 
 
 from backend.services.geotiff_service import GeoTiffService, get_geotiff_service
+from backend.services.raster_operation_service import RasterOperationService
 
 RASTERS_PREFIX = "/rasters"
 
@@ -33,8 +38,14 @@ router = APIRouter(
 
 
 DbSession = Annotated[AsyncSession, Depends(get_session)]
+
 FileStoreDep = Annotated[FileStore, Depends(get_file_storage)]
+
 GeoTiffServiceDep = Annotated[GeoTiffService, Depends(get_geotiff_service)]
+
+RasterOperationServiceDep = Annotated[
+    RasterOperationService, Depends(get_raster_operation_service)
+]
 
 
 @router.get("/{id}/pixel", operation_id="getPixel")
@@ -63,21 +74,37 @@ async def get_raster_pixel(
 
 @router.get("/{id}", operation_id="getRaster")
 async def get_raster(
-    id: UUID, session: DbSession, geotiff_service: GeoTiffServiceDep
+    id: UUID,
+    session: DbSession,
+    geotiff_service: GeoTiffServiceDep,
+    raster_operation_service: RasterOperationServiceDep,
+    operations: list[RasterOperation] | None = Query(default=None),
 ) -> Response:
     raster = await session.get(Raster, id)
 
     if raster is None:
         raise HTTPException(status_code=404, detail="File not found")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        png_file_path = f"{tmp_dir}/png.tif"
-        geotiff_service.convert_geotiff_to_png(
-            raster.get_path(RasterFileName.COG), png_file_path
-        )
+    path = raster.get_path(RasterFileName.COG)
 
-        with open(png_file_path, "rb") as f:
-            png_bytes = f.read()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+
+        with rasterio.open(path) as dataset:
+            raster_image = dataset.read([1, 2, 3])
+
+            normalized = geotiff_service.normalize_0_to_1(raster_image)
+
+            operations_output = normalized
+            if operations:
+                operations_output = raster_operation_service.apply_operations(
+                    normalized, operations
+                )
+
+            png_file_path = f"{tmp_dir}/png.tif"
+            geotiff_service.save_as_png(operations_output, png_file_path)
+
+            with open(png_file_path, "rb") as f:
+                png_bytes = f.read()
 
     return Response(png_bytes, media_type="image/png")
 
