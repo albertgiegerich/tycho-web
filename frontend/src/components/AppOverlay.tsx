@@ -52,7 +52,6 @@ const AppOverlay = () => {
 
       const { data } = await uploadRaster({ body: { file } });
 
-      console.log("uploaded", data);
       if (data) {
         setRasters((prevValue) => [...prevValue, data]);
       }
@@ -169,6 +168,9 @@ const AppOverlay = () => {
           variant="contained"
           color="primary"
           sx={{ marginTop: "12px" }}
+          disabled={
+            selectedRaster === null || activeOperations.includes("true_color")
+          }
         >
           True color
         </Button>
