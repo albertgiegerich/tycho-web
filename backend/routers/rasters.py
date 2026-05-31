@@ -13,7 +13,7 @@ import rasterio
 
 from fastapi import Body, Query, Response, UploadFile
 from backend.schemas import RasterOperation, RasterPixel, RasterResponse
-from backend.services.file_storage import get_file_storage
+from backend.services.file_storage import get_file_store
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
 from backend.database import get_session
@@ -38,7 +38,7 @@ router = APIRouter(
 
 DbSession = Annotated[AsyncSession, Depends(get_session)]
 
-FileStoreDep = Annotated[FileStore, Depends(get_file_storage)]
+FileStoreDep = Annotated[FileStore, Depends(get_file_store)]
 
 GeoTiffServiceDep = Annotated[GeoTiffService, Depends(get_geotiff_service)]
 

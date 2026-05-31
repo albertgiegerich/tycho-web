@@ -20,7 +20,7 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.database import get_session
-from backend.services.file_storage import FileStore, get_file_storage
+from backend.services.file_storage import FileStore, get_file_store
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def client(
     mock_geotiff_service: MagicMock,
 ) -> Iterator[TestClient]:
     app.dependency_overrides[get_session] = lambda: mock_db_session
-    app.dependency_overrides[get_file_storage] = lambda: mock_file_store
+    app.dependency_overrides[get_file_store] = lambda: mock_file_store
     app.dependency_overrides[get_geotiff_service] = lambda: mock_geotiff_service
 
     yield TestClient(app)

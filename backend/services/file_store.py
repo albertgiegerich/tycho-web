@@ -7,7 +7,7 @@ from typing import Protocol
 import tempfile
 
 
-def get_file_storage() -> Iterator[FileStore]:
+def get_file_store() -> Iterator[FileStore]:
     if settings.environment == "local":
         with tempfile.TemporaryDirectory() as tmp_dir:
             yield LocalFileStore(tmp_dir)
