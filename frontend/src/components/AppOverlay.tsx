@@ -65,7 +65,7 @@ const AppOverlay = () => {
       const { data } = await getRaster({
         path: { id: selectedRaster.id },
         body: {
-          band_order: bandOrder,
+          bandOrder,
           operations: activeOperations,
         },
       });
@@ -204,7 +204,13 @@ const AppOverlay = () => {
             ))}
           </Select>
         </FormControl>
-        <BandOrder onChange={(bands) => setBandOrder(bands)} />
+
+        {selectedRaster && (
+          <BandOrder
+            bandCount={selectedRaster.bandCount}
+            onChange={(bands) => setBandOrder(bands)}
+          />
+        )}
         <Button
           onClick={onDeleteRaster}
           variant="contained"

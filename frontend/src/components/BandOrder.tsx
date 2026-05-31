@@ -47,10 +47,13 @@ const SortableBand = ({ id }: { id: string }) => {
 
 interface BandOrderProps {
   onChange: (bands: [number, number, number]) => void;
+  bandCount: number;
 }
 
-export const BandOrder = ({ onChange }: BandOrderProps) => {
-  const [bands, setBands] = useState(["1", "2", "3", "4", "5", "6"]);
+export const BandOrder = ({ onChange, bandCount }: BandOrderProps) => {
+  const [bands, setBands] = useState(
+    Array.from({ length: bandCount }, (_, i) => String(i + 1)),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const onDragStart = useCallback((event: DragStartEvent) => {

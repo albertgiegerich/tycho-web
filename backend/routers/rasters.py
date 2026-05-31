@@ -1,3 +1,4 @@
+from backend.config import settings
 from backend.schemas import GetRasterRequest
 from backend.services.raster_operation_service import (
     get_raster_operation_service,
@@ -85,7 +86,7 @@ async def get_raster(
     if raster is None:
         raise HTTPException(status_code=404, detail="File not found")
 
-    path = raster.get_path(RasterFileName.COG)
+    path = f"{settings.data_root}/{raster.path}/{RasterFileName.COG.value}"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -147,6 +148,7 @@ async def list_rasters(session: DbSession) -> list[RasterResponse]:
                 id=raster.id,
                 name=raster.name,
                 bounds=bounds,
+                band_count=raster.band_count,
             )
         )
 
@@ -178,6 +180,8 @@ async def upload_raster(
 
         reprojected_path = None
         with rasterio.open(original_file_path) as original_dataset:
+            band_count: int = original_dataset.count
+
             if original_dataset.crs.to_epsg() == 4326:
                 reprojected_path = original_file_path
             else:
@@ -204,6 +208,7 @@ async def upload_raster(
         bounding_box_bottom=bounds.bottom,
         bounding_box_right=bounds.right,
         bounding_box_top=bounds.top,
+        band_count=band_count,
     )
 
     response = RasterResponse.from_raster(raster)

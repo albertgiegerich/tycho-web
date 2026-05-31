@@ -1,7 +1,6 @@
-from backend.config import settings
 from enum import Enum
 
-from sqlalchemy import Double
+from sqlalchemy import Double, Integer
 import uuid
 from sqlalchemy.ext.asyncio.session import AsyncAttrs
 from sqlalchemy import String
@@ -25,9 +24,7 @@ class Raster(Base):
     bounding_box_bottom: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_right: Mapped[float] = mapped_column(Double, nullable=False)
     bounding_box_top: Mapped[float] = mapped_column(Double, nullable=False)
-
-    def get_path(self, fileName: RasterFileName):
-        return f"{settings.data_root}/{self.path}/{fileName.value}"
+    band_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class RasterFileName(Enum):

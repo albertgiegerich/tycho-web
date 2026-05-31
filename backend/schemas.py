@@ -3,21 +3,30 @@ from enum import StrEnum
 from typing import Annotated, Literal
 import uuid
 from pydantic import BaseModel, Field
+from pydantic.alias_generators import to_camel
 from backend.models import Raster
 
 
-class RasterResponse(BaseModel):
+class DefaultConfigModel(BaseModel):
+    model_config = {
+        "from_attributes": True,
+        "alias_generator": to_camel,
+        "populate_by_name": True,
+    }
+
+
+class RasterResponse(DefaultConfigModel):
     id: uuid.UUID
     name: str
     bounds: tuple[float, float, float, float]
-
-    model_config = {"from_attributes": True}
+    band_count: int
 
     @staticmethod
     def from_raster(raster: Raster) -> "RasterResponse":
         return RasterResponse(
             id=raster.id,
             name=raster.name,
+            band_count=raster.band_count,
             bounds=(
                 raster.bounding_box_left,
                 raster.bounding_box_bottom,
@@ -27,12 +36,12 @@ class RasterResponse(BaseModel):
         )
 
 
-class GetRasterRequest(BaseModel):
+class GetRasterRequest(DefaultConfigModel):
     band_order: tuple[int, int, int]
     operations: list[RasterOperation]
 
 
-class RasterPixel(BaseModel):
+class RasterPixel(DefaultConfigModel):
     brightness_values: list[float]
     row: int
     col: int
@@ -43,11 +52,11 @@ class RasterOperationId(StrEnum):
     DENSITY_SLICE = "density_slice"
 
 
-class TrueColorOperation(BaseModel):
+class TrueColorOperation(DefaultConfigModel):
     id: Literal[RasterOperationId.TRUE_COLOR]
 
 
-class DensitySliceOperation(BaseModel):
+class DensitySliceOperation(DefaultConfigModel):
     id: Literal[RasterOperationId.DENSITY_SLICE]
     breaks: list[float]
 
