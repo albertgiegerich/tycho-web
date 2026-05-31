@@ -19,7 +19,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import styled from "@emotion/styled";
-import { Box } from "@mui/material";
+import { BandOrder } from "./BandOrder";
 
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -61,7 +61,10 @@ const AppOverlay = () => {
     const updateRasterImageUrl = async () => {
       const { data } = await getRaster({
         path: { id: selectedRaster.id },
-        body: activeOperations,
+        body: {
+          band_order: [1, 2, 3],
+          operations: activeOperations,
+        },
       });
 
       if (!data) {
@@ -198,6 +201,7 @@ const AppOverlay = () => {
             ))}
           </Select>
         </FormControl>
+        <BandOrder />
         <Button
           onClick={onDeleteRaster}
           variant="contained"

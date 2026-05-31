@@ -1,3 +1,4 @@
+from backend.schemas import GetRasterRequest
 from backend.services.raster_operation_service import (
     get_raster_operation_service,
 )
@@ -12,7 +13,7 @@ from backend.models import RasterFileName
 import rasterio
 
 from fastapi import Body, Query, Response, UploadFile
-from backend.schemas import RasterOperation, RasterPixel, RasterResponse
+from backend.schemas import RasterPixel, RasterResponse
 from backend.services.file_store import get_file_store
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.util.typing import Annotated
@@ -77,7 +78,7 @@ async def get_raster(
     session: DbSession,
     geotiff_service: GeoTiffServiceDep,
     raster_operation_service: RasterOperationServiceDep,
-    operations: list[RasterOperation] | None = Body(default=None),
+    request_payload: GetRasterRequest = Body(),
 ) -> Response:
     raster = await session.get(Raster, id)
 
@@ -89,14 +90,14 @@ async def get_raster(
     with tempfile.TemporaryDirectory() as tmp_dir:
 
         with rasterio.open(path) as dataset:
-            raster_image = dataset.read([1, 2, 3])
+            raster_image = dataset.read(request_payload.band_order)
 
             normalized = geotiff_service.normalize_0_to_1(raster_image)
 
             operations_output = normalized
-            if operations:
+            if request_payload.operations:
                 operations_output = raster_operation_service.apply_operations(
-                    normalized, operations
+                    normalized, request_payload.operations
                 )
 
             png_file_path = f"{tmp_dir}/png.tif"
