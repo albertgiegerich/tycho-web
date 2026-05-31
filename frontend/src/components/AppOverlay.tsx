@@ -9,6 +9,7 @@ import {
   uploadRaster,
 } from "../generated/sdk.gen";
 import type { RasterOperation, RasterResponse } from "../generated";
+import DensitySliceDialog from "./DensitySliceDialog";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
 import Button from "@mui/material/Button";
@@ -34,6 +35,7 @@ const AppOverlay = () => {
   const [activeOperations, setActiveOperations] = useState<RasterOperation[]>(
     [],
   );
+  const [densitySliceDialogOpen, setDensitySliceDialogOpen] = useState(false);
 
   const { current: map } = useMap();
 
@@ -204,6 +206,15 @@ const AppOverlay = () => {
           True color
         </Button>
         <Button
+          onClick={() => setDensitySliceDialogOpen(true)}
+          variant="contained"
+          color="primary"
+          sx={{ marginTop: "12px" }}
+          disabled={selectedRaster === null}
+        >
+          Density Slice
+        </Button>
+        <Button
           onClick={() => setActiveOperations([])}
           variant="contained"
           color="secondary"
@@ -213,6 +224,16 @@ const AppOverlay = () => {
           Reset
         </Button>
       </div>
+      <DensitySliceDialog
+        open={densitySliceDialogOpen}
+        onClose={() => setDensitySliceDialogOpen(false)}
+        onApply={(breaks) =>
+          setActiveOperations((prev) => [
+            ...prev,
+            { id: "density_slice", breaks },
+          ])
+        }
+      />
       <DeckGLOverlay layers={layers} />
       <MapClickHandler onClick={onClickMap} />
     </>

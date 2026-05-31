@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from typing import Annotated, Literal
 import uuid
@@ -33,7 +33,7 @@ class RasterPixel(BaseModel):
     col: int
 
 
-class RasterOperationId(Enum):
+class RasterOperationId(StrEnum):
     TRUE_COLOR = "true_color"
     DENSITY_SLICE = "density_slice"
 
