@@ -235,66 +235,70 @@ const AppOverlay = () => {
         </FormControl>
 
         {selectedRaster && (
-          <BandOrder
-            bandCount={selectedRaster.bandCount}
-            onChange={(bands) => setBandOrder(bands)}
-          />
-        )}
-        <Button
-          onClick={onDeleteRaster}
-          variant="contained"
-          color="error"
-          disabled={selectedRaster === null}
-        >
-          Delete
-        </Button>
-        <FormControl disabled={selectedRaster === null}>
-          <FormLabel sx={{ color: "#fff" }}>Contrast enhancement</FormLabel>
-          <RadioGroup
-            value={contrastEnhancementId}
-            onChange={onContrastEnhancementChange}
-          >
-            <FormControlLabel
-              value={LINEAR_STRETCH_ID}
-              control={<Radio size="small" sx={{ color: "#fff" }} />}
-              label="Linear stretch"
-              sx={{ color: "#fff" }}
+          <>
+            <BandOrder
+              bandCount={selectedRaster.bandCount}
+              bandOrder={bandOrder}
+              onChange={(bands) => setBandOrder(bands)}
             />
-            <FormControlLabel
-              value={TRUE_COLOR_ID}
-              control={<Radio size="small" sx={{ color: "#fff" }} />}
-              label="True color"
-              sx={{ color: "#fff" }}
-            />
-            <FormControlLabel
-              value={null}
-              control={<Radio size="small" sx={{ color: "#fff" }} />}
-              label="None"
-              sx={{ color: "#fff" }}
-            />
-          </RadioGroup>
-        </FormControl>
-        <Button
-          onClick={() => setDensitySliceDialogOpen(true)}
-          variant="contained"
-          color="primary"
-          disabled={selectedRaster === null}
-        >
-          Density Slice
-        </Button>
 
-        <Button
-          onClick={() => {
-            setActiveOperations([]);
-            setContrastEnhancementId("linear_stretch");
-            setBandOrder([1, 2, 3]);
-          }}
-          variant="contained"
-          color="secondary"
-          disabled={activeOperations.length === 0}
-        >
-          Reset
-        </Button>
+            <FormControl disabled={selectedRaster === null}>
+              <FormLabel sx={{ color: "#fff" }}>Contrast enhancement</FormLabel>
+              <RadioGroup
+                value={contrastEnhancementId}
+                onChange={onContrastEnhancementChange}
+              >
+                <FormControlLabel
+                  value={LINEAR_STRETCH_ID}
+                  control={<Radio size="small" sx={{ color: "#fff" }} />}
+                  label="Linear stretch"
+                  sx={{ color: "#fff" }}
+                />
+                <FormControlLabel
+                  value={TRUE_COLOR_ID}
+                  control={<Radio size="small" sx={{ color: "#fff" }} />}
+                  label="True color"
+                  sx={{ color: "#fff" }}
+                />
+                <FormControlLabel
+                  value={null}
+                  control={<Radio size="small" sx={{ color: "#fff" }} />}
+                  label="None"
+                  sx={{ color: "#fff" }}
+                />
+              </RadioGroup>
+            </FormControl>
+            <Button
+              onClick={() => setDensitySliceDialogOpen(true)}
+              variant="contained"
+              color="primary"
+              disabled={selectedRaster === null}
+            >
+              Density Slice
+            </Button>
+
+            <Button
+              onClick={() => {
+                setActiveOperations([]);
+                setContrastEnhancementId("linear_stretch");
+                setBandOrder([1, 2, 3]);
+              }}
+              variant="contained"
+              color="secondary"
+            >
+              Reset
+            </Button>
+            <Button
+              onClick={onDeleteRaster}
+              variant="contained"
+              color="error"
+              disabled={selectedRaster === null}
+              sx={{ marginTop: "auto" }}
+            >
+              Delete
+            </Button>
+          </>
+        )}
       </SideBar>
       <DensitySliceDialog
         open={densitySliceDialogOpen}
@@ -323,6 +327,7 @@ const SideBar = styled.div`
   flex-direction: column;
   gap: 12px;
   padding: 16px;
+  padding-bottom: 30px;
   box-sizing: border-box;
   z-index: 1;
   backdrop-filter: blur(4px);

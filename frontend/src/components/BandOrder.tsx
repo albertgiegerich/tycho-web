@@ -50,12 +50,11 @@ const SortableBand = ({ id, color }: { id: string; color?: string }) => {
 interface BandOrderProps {
   onChange: (bands: [number, number, number]) => void;
   bandCount: number;
+  bandOrder: [number, number, number];
 }
 
-export const BandOrder = ({ onChange, bandCount }: BandOrderProps) => {
-  const [bands, setBands] = useState(
-    Array.from({ length: bandCount }, (_, i) => String(i + 1)),
-  );
+export const BandOrder = ({ onChange, bandOrder }: BandOrderProps) => {
+  const bands = bandOrder.map(String);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const onDragStart = useCallback((event: DragStartEvent) => {
@@ -66,23 +65,17 @@ export const BandOrder = ({ onChange, bandCount }: BandOrderProps) => {
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
-        setBands((prev) => {
-          const next = arrayMove(
-            prev,
-            prev.indexOf(String(active.id)),
-            prev.indexOf(String(over.id)),
-          );
-
-          const parsed = next.map((n) => Number(n));
-
-          onChange([parsed[0], parsed[1], parsed[2]]);
-
-          return next;
-        });
+        const next = arrayMove(
+          bands,
+          bands.indexOf(String(active.id)),
+          bands.indexOf(String(over.id)),
+        );
+        const parsed = next.map(Number);
+        onChange([parsed[0], parsed[1], parsed[2]]);
       }
       setActiveId(null);
     },
-    [onChange],
+    [onChange, bands],
   );
 
   return (
