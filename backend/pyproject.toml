@@ -23,6 +23,7 @@ project-includes = [
 
 [dependency-groups]
 dev = [
+    "matplotlib>=3.10.9",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.4.0",
     "pytest-mock>=3.15.1",

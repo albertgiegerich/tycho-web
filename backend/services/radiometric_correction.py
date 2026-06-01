@@ -85,3 +85,16 @@ class RadiometricCorrector:
         # Assume the image is of shape (height, width)
 
         return min_max_scale(image, np.float64(0), np.float64(1))
+
+
+def histogram_equalize(arr: npt.NDArray[np.float64], bins: int = 1000):
+    counts, edges = np.histogram(arr, bins=bins)
+
+    cumulative_distribution = counts.cumsum() / counts.sum()  # normalized to [0, 1]
+
+    # Average each pair of adjacent edges to get the centers
+    bin_centers = (edges[:-1] + edges[1:]) / 2
+
+    # bin_centers=X and cumulutative_distribution=Y create a piecewise linear function that is the cumulative histogram
+    # but only has as much precision as the number of bins. We can interpolate the new values of arr from this histogram
+    return np.interp(arr, bin_centers, cumulative_distribution)
