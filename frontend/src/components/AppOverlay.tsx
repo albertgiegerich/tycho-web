@@ -174,15 +174,22 @@ const AppOverlay = () => {
     [selectedRaster],
   );
 
+  const onReset = useCallback(() => {
+    setActiveOperations([]);
+    setContrastEnhancementId("linear_stretch");
+    setBandOrder([1, 2, 3]);
+  }, []);
+
   const onSelectRaster = useCallback(
     (e: SelectChangeEvent) => {
       const raster = rasters.find((f) => f.id === e.target.value);
       if (raster) {
         setSelectedRaster(raster);
         map?.fitBounds(raster.bounds, { padding: 40 });
+        onReset();
       }
     },
-    [map, rasters],
+    [map, onReset, rasters],
   );
 
   const onDeleteRaster = useCallback(async () => {
@@ -277,15 +284,7 @@ const AppOverlay = () => {
               Density Slice
             </Button>
 
-            <Button
-              onClick={() => {
-                setActiveOperations([]);
-                setContrastEnhancementId("linear_stretch");
-                setBandOrder([1, 2, 3]);
-              }}
-              variant="contained"
-              color="secondary"
-            >
+            <Button onClick={onReset} variant="contained" color="secondary">
               Reset
             </Button>
             <Button
