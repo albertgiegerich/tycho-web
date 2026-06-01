@@ -38,6 +38,7 @@ class RasterResponse(DefaultConfigModel):
 
 class GetRasterRequest(DefaultConfigModel):
     band_order: tuple[int, int, int]
+    contrast_enhancement: ContrastEnhancement | None
     operations: list[RasterOperation]
 
 
@@ -47,13 +48,26 @@ class RasterPixel(DefaultConfigModel):
     col: int
 
 
-class RasterOperationId(StrEnum):
+class ContrastEnhancementId(StrEnum):
     TRUE_COLOR = "true_color"
+    LINEAR_STRETCH = "linear_stretch"
+
+
+class TrueColorEnhancement(DefaultConfigModel):
+    id: Literal[ContrastEnhancementId.TRUE_COLOR]
+
+
+class LinearStretchEnhancement(DefaultConfigModel):
+    id: Literal[ContrastEnhancementId.LINEAR_STRETCH]
+
+
+type ContrastEnhancement = Annotated[
+    TrueColorEnhancement | LinearStretchEnhancement, Field(discriminator="id")
+]
+
+
+class RasterOperationId(StrEnum):
     DENSITY_SLICE = "density_slice"
-
-
-class TrueColorOperation(DefaultConfigModel):
-    id: Literal[RasterOperationId.TRUE_COLOR]
 
 
 class DensitySliceOperation(DefaultConfigModel):
@@ -61,6 +75,4 @@ class DensitySliceOperation(DefaultConfigModel):
     breaks: list[float]
 
 
-type RasterOperation = Annotated[
-    TrueColorOperation | DensitySliceOperation, Field(discriminator="id")
-]
+type RasterOperation = Annotated[DensitySliceOperation, Field(discriminator="id")]

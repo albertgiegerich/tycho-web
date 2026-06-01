@@ -9,14 +9,22 @@ import {
   listRasters,
   uploadRaster,
 } from "../generated/sdk.gen";
-import type { RasterOperation, RasterResponse } from "../generated";
+import type {
+  ContrastEnhancement,
+  RasterOperation,
+  RasterResponse,
+} from "../generated";
 import DensitySliceDialog from "./DensitySliceDialog";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import styled from "@emotion/styled";
 import { BandOrder } from "./BandOrder";
@@ -25,6 +33,15 @@ function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
   overlay.setProps(props);
   return null;
+}
+
+const TRUE_COLOR_ID: ContrastEnhancement["id"] = "true_color";
+const LINEAR_STRETCH_ID: ContrastEnhancement["id"] = "linear_stretch";
+
+const CONTRAST_ENHANCEMENT_IDS = [TRUE_COLOR_ID, LINEAR_STRETCH_ID];
+
+function isContrastEnhancementId(id: string): id is ContrastEnhancement["id"] {
+  return (CONTRAST_ENHANCEMENT_IDS as readonly string[]).includes(id);
 }
 
 const AppOverlay = () => {
@@ -42,6 +59,9 @@ const AppOverlay = () => {
   const [bandOrder, setBandOrder] = useState<[number, number, number]>([
     1, 2, 3,
   ]);
+  const [contrastEnhancementId, setContrastEnhancementId] = useState<
+    ContrastEnhancement["id"] | null
+  >("linear_stretch");
 
   const { current: map } = useMap();
 
@@ -66,6 +86,12 @@ const AppOverlay = () => {
         path: { id: selectedRaster.id },
         body: {
           bandOrder,
+          contrastEnhancement:
+            contrastEnhancementId === null
+              ? null
+              : {
+                  id: contrastEnhancementId,
+                },
           operations: activeOperations,
         },
       });
@@ -85,7 +111,7 @@ const AppOverlay = () => {
     };
 
     updateRasterImageUrl();
-  }, [selectedRaster, activeOperations, bandOrder]);
+  }, [selectedRaster, activeOperations, bandOrder, contrastEnhancementId]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,15 +130,18 @@ const AppOverlay = () => {
     [],
   );
 
-  const onClickTrueColor = useCallback(() => {
-    setActiveOperations((prevValue) => {
-      if (prevValue.some((op) => op.id === "true_color")) {
-        return prevValue;
-      }
+  const onContrastEnhancementChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const id = e.target.value;
 
-      return [...prevValue, { id: "true_color" }];
-    });
-  }, []);
+      if (isContrastEnhancementId(id)) {
+        setContrastEnhancementId(id);
+      } else {
+        setContrastEnhancementId(null);
+      }
+    },
+    [],
+  );
 
   const layers: Layer[] = useMemo(() => {
     if (selectedRaster && rasterImageUrl) {
@@ -219,17 +248,32 @@ const AppOverlay = () => {
         >
           Delete
         </Button>
-        <Button
-          onClick={onClickTrueColor}
-          variant="contained"
-          color="primary"
-          disabled={
-            selectedRaster === null ||
-            activeOperations.some((op) => op.id === "true_color")
-          }
-        >
-          True color
-        </Button>
+        <FormControl disabled={selectedRaster === null}>
+          <FormLabel sx={{ color: "#fff" }}>Contrast enhancement</FormLabel>
+          <RadioGroup
+            value={contrastEnhancementId}
+            onChange={onContrastEnhancementChange}
+          >
+            <FormControlLabel
+              value={LINEAR_STRETCH_ID}
+              control={<Radio size="small" sx={{ color: "#fff" }} />}
+              label="Linear stretch"
+              sx={{ color: "#fff" }}
+            />
+            <FormControlLabel
+              value={TRUE_COLOR_ID}
+              control={<Radio size="small" sx={{ color: "#fff" }} />}
+              label="True color"
+              sx={{ color: "#fff" }}
+            />
+            <FormControlLabel
+              value={null}
+              control={<Radio size="small" sx={{ color: "#fff" }} />}
+              label="None"
+              sx={{ color: "#fff" }}
+            />
+          </RadioGroup>
+        </FormControl>
         <Button
           onClick={() => setDensitySliceDialogOpen(true)}
           variant="contained"
@@ -240,7 +284,11 @@ const AppOverlay = () => {
         </Button>
 
         <Button
-          onClick={() => setActiveOperations([])}
+          onClick={() => {
+            setActiveOperations([]);
+            setContrastEnhancementId("linear_stretch");
+            setBandOrder([1, 2, 3]);
+          }}
           variant="contained"
           color="secondary"
           disabled={activeOperations.length === 0}

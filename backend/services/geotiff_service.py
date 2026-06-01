@@ -1,10 +1,11 @@
-from typing import Tuple
 import numpy as np
 import rasterio
 import numpy.typing as npt
 from rasterio.enums import Resampling
 from rasterio.shutil import copy
 from rasterio.warp import calculate_default_transform, reproject
+
+from backend.utils import get_dtype_min_max
 
 
 def get_geotiff_service() -> GeoTiffService:
@@ -60,17 +61,4 @@ class GeoTiffService:
         with rasterio.open(input_path) as dataset:
             copy(dataset, output_path, driver="COG", compress="deflate")
 
-    def normalize_0_to_1(self, arr: np.ndarray) -> npt.NDArray[np.float64]:
-        _, dtype_max = self.get_dtype_min_max(arr.dtype)
 
-        arr = arr.astype(np.float64)
-        return arr / dtype_max
-
-    def get_dtype_min_max(self, arr_dtype: np.dtype) -> Tuple[int, int]:
-        match arr_dtype.kind:
-            case "i" | "u":
-                return np.iinfo(arr_dtype).min, np.iinfo(arr_dtype).max
-            case "f":
-                return np.finfo(arr_dtype).min, np.finfo(arr_dtype).max
-            case _:
-                raise ValueError(f"Unsupported dtype kind: {arr_dtype.kind}")

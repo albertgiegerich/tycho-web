@@ -29,6 +29,7 @@ from uuid import UUID
 
 from backend.services.geotiff_service import GeoTiffService, get_geotiff_service
 from backend.services.raster_operation_service import RasterOperationService
+from backend.utils import normalize_0_to_1
 
 RASTERS_PREFIX = "/rasters"
 
@@ -93,16 +94,20 @@ async def get_raster(
         with rasterio.open(path) as dataset:
             raster_image = dataset.read(request_payload.band_order)
 
-            normalized = geotiff_service.normalize_0_to_1(raster_image)
+            raster_image = normalize_0_to_1(raster_image)
 
-            operations_output = normalized
+            if request_payload.contrast_enhancement:
+                raster_image = raster_operation_service.apply_contrast_enhancement(
+                    raster_image, request_payload.contrast_enhancement
+                )
+
             if request_payload.operations:
-                operations_output = raster_operation_service.apply_operations(
-                    normalized, request_payload.operations
+                raster_image = raster_operation_service.apply_operations(
+                    raster_image, request_payload.operations
                 )
 
             png_file_path = f"{tmp_dir}/png.tif"
-            geotiff_service.save_as_png(operations_output, png_file_path)
+            geotiff_service.save_as_png(raster_image, png_file_path)
 
             with open(png_file_path, "rb") as f:
                 png_bytes = f.read()

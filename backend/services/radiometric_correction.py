@@ -1,3 +1,4 @@
+from backend.utils import min_max_scale
 from itertools import pairwise
 
 import numpy as np
@@ -66,3 +67,21 @@ class RadiometricCorrector:
             image = np.where((start <= image) & (image < end), slice_bv, image)
 
         return image
+
+    def linear_stretch(
+        self,
+        image: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        # Assume the image is of shape (3, height, width)
+        image[0] = self._linear_stetch_one_band(image[0])
+        image[1] = self._linear_stetch_one_band(image[1])
+        image[2] = self._linear_stetch_one_band(image[2])
+
+        return image
+
+    def _linear_stetch_one_band(
+        self, image: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
+        # Assume the image is of shape (height, width)
+
+        return min_max_scale(image, np.float64(0), np.float64(1))
