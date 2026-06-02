@@ -37,8 +37,13 @@ function DeckGLOverlay(props: DeckProps) {
 
 const TRUE_COLOR_ID: ContrastEnhancement["id"] = "true_color";
 const LINEAR_STRETCH_ID: ContrastEnhancement["id"] = "linear_stretch";
+const EQUALIZE_HISTOGRAM_ID: ContrastEnhancement["id"] = "equalize_histogram";
 
-const CONTRAST_ENHANCEMENT_IDS = [TRUE_COLOR_ID, LINEAR_STRETCH_ID];
+const CONTRAST_ENHANCEMENT_IDS = [
+  TRUE_COLOR_ID,
+  LINEAR_STRETCH_ID,
+  EQUALIZE_HISTOGRAM_ID,
+];
 
 function isContrastEnhancementId(id: string): id is ContrastEnhancement["id"] {
   return (CONTRAST_ENHANCEMENT_IDS as readonly string[]).includes(id);
@@ -56,9 +61,7 @@ const AppOverlay = () => {
     [],
   );
   const [densitySliceDialogOpen, setDensitySliceDialogOpen] = useState(false);
-  const [bandOrder, setBandOrder] = useState<[number, number, number]>([
-    1, 2, 3,
-  ]);
+  const [bandOrder, setBandOrder] = useState<number[]>([1, 2, 3]);
   const [contrastEnhancementId, setContrastEnhancementId] = useState<
     ContrastEnhancement["id"] | null
   >("linear_stretch");
@@ -85,7 +88,7 @@ const AppOverlay = () => {
       const { data } = await getRaster({
         path: { id: selectedRaster.id },
         body: {
-          bandOrder,
+          bandOrder: [bandOrder[0], bandOrder[1], bandOrder[2]],
           contrastEnhancement:
             contrastEnhancementId === null
               ? null
@@ -177,8 +180,10 @@ const AppOverlay = () => {
   const onReset = useCallback(() => {
     setActiveOperations([]);
     setContrastEnhancementId("linear_stretch");
-    setBandOrder([1, 2, 3]);
-  }, []);
+    setBandOrder(
+      Array.from({ length: selectedRaster?.bandCount ?? 3 }, (_, i) => i + 1),
+    );
+  }, [selectedRaster]);
 
   const onSelectRaster = useCallback(
     (e: SelectChangeEvent) => {
@@ -186,10 +191,12 @@ const AppOverlay = () => {
       if (raster) {
         setSelectedRaster(raster);
         map?.fitBounds(raster.bounds, { padding: 40 });
-        onReset();
+        setActiveOperations([]);
+        setContrastEnhancementId("linear_stretch");
+        setBandOrder(Array.from({ length: raster.bandCount }, (_, i) => i + 1));
       }
     },
-    [map, onReset, rasters],
+    [map, rasters],
   );
 
   const onDeleteRaster = useCallback(async () => {
@@ -244,7 +251,6 @@ const AppOverlay = () => {
         {selectedRaster && (
           <>
             <BandOrder
-              bandCount={selectedRaster.bandCount}
               bandOrder={bandOrder}
               onChange={(bands) => setBandOrder(bands)}
             />
@@ -259,6 +265,12 @@ const AppOverlay = () => {
                   value={LINEAR_STRETCH_ID}
                   control={<Radio size="small" sx={{ color: "#fff" }} />}
                   label="Linear stretch"
+                  sx={{ color: "#fff" }}
+                />
+                <FormControlLabel
+                  value={EQUALIZE_HISTOGRAM_ID}
+                  control={<Radio size="small" sx={{ color: "#fff" }} />}
+                  label="Equalize histogram"
                   sx={{ color: "#fff" }}
                 />
                 <FormControlLabel
@@ -284,7 +296,7 @@ const AppOverlay = () => {
               Density Slice
             </Button>
 
-            <Button onClick={onReset} variant="contained" color="secondary">
+            <Button onClick={onReset} variant="contained" color="primary">
               Reset
             </Button>
             <Button

@@ -48,9 +48,8 @@ const SortableBand = ({ id, color }: { id: string; color?: string }) => {
 };
 
 interface BandOrderProps {
-  onChange: (bands: [number, number, number]) => void;
-  bandCount: number;
-  bandOrder: [number, number, number];
+  onChange: (bands: number[]) => void;
+  bandOrder: number[];
 }
 
 export const BandOrder = ({ onChange, bandOrder }: BandOrderProps) => {
@@ -70,8 +69,7 @@ export const BandOrder = ({ onChange, bandOrder }: BandOrderProps) => {
           bands.indexOf(String(active.id)),
           bands.indexOf(String(over.id)),
         );
-        const parsed = next.map(Number);
-        onChange([parsed[0], parsed[1], parsed[2]]);
+        onChange(next.map(Number));
       }
       setActiveId(null);
     },

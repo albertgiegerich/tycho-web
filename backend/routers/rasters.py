@@ -96,14 +96,14 @@ async def get_raster(
 
             raster_image = normalize_0_to_1(raster_image)
 
-            if request_payload.contrast_enhancement:
-                raster_image = raster_operation_service.apply_contrast_enhancement(
-                    raster_image, request_payload.contrast_enhancement
-                )
-
             if request_payload.operations:
                 raster_image = raster_operation_service.apply_operations(
                     raster_image, request_payload.operations
+                )
+
+            if request_payload.contrast_enhancement:
+                raster_image = raster_operation_service.apply_contrast_enhancement(
+                    raster_image, request_payload.contrast_enhancement
                 )
 
             png_file_path = f"{tmp_dir}/png.tif"

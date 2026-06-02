@@ -19,10 +19,15 @@ class RasterOperationService:
         self, arr: npt.NDArray[np.float64], contrast_enhancement: ContrastEnhancement
     ) -> npt.NDArray[np.float64]:
         match contrast_enhancement.id:
+
             case ContrastEnhancementId.TRUE_COLOR:
                 return self.radiometric_corrector.true_color(arr)
+
             case ContrastEnhancementId.LINEAR_STRETCH:
                 return self.radiometric_corrector.linear_stretch(arr)
+
+            case ContrastEnhancementId.EQUALIZE_HISTOGRAM:
+                return self.radiometric_corrector.histogram_equalize(arr)
 
     def apply_operations(
         self,

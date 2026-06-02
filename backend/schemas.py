@@ -51,6 +51,7 @@ class RasterPixel(DefaultConfigModel):
 class ContrastEnhancementId(StrEnum):
     TRUE_COLOR = "true_color"
     LINEAR_STRETCH = "linear_stretch"
+    EQUALIZE_HISTOGRAM = "equalize_histogram"
 
 
 class TrueColorEnhancement(DefaultConfigModel):
@@ -61,8 +62,13 @@ class LinearStretchEnhancement(DefaultConfigModel):
     id: Literal[ContrastEnhancementId.LINEAR_STRETCH]
 
 
+class EqualizeHistogramEnhancement(DefaultConfigModel):
+    id: Literal[ContrastEnhancementId.EQUALIZE_HISTOGRAM]
+
+
 type ContrastEnhancement = Annotated[
-    TrueColorEnhancement | LinearStretchEnhancement, Field(discriminator="id")
+    TrueColorEnhancement | LinearStretchEnhancement | EqualizeHistogramEnhancement,
+    Field(discriminator="id"),
 ]
 
 

@@ -1,4 +1,4 @@
-from backend.utils import min_max_scale
+from backend.utils import percentile_min_max_scale
 from itertools import pairwise
 
 import numpy as np
@@ -18,13 +18,6 @@ G_OFF_POW = G_OFF**GAMMA
 G_OFF_RANGE = (1 + G_OFF) ** GAMMA - G_OFF_POW
 
 
-def clip(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    clipped = np.maximum(arr, 0)
-    clipped = np.minimum(clipped, 1)
-
-    return clipped
-
-
 class RadiometricCorrector:
 
     # this function is based on the default "true color" evalscript from Copernicus browser
@@ -34,7 +27,7 @@ class RadiometricCorrector:
 
         rgb /= MAX_R
 
-        rgb = clip(rgb)
+        rgb = np.clip(rgb, 0, 1)
 
         rgb = (
             rgb
@@ -46,7 +39,7 @@ class RadiometricCorrector:
 
         avg_s = (rgb[0] + rgb[1] + rgb[2]) / 3.0 * (1.0 - SAT)
 
-        rgb = clip(avg_s + rgb * SAT)
+        rgb = np.clip(avg_s + rgb * SAT, 0, 1)
 
         rgb = np.where(
             rgb <= 0.0031308, 12.92 * rgb, 1.055 * rgb**0.41666666666 - 0.055
@@ -84,17 +77,20 @@ class RadiometricCorrector:
     ) -> npt.NDArray[np.float64]:
         # Assume the image is of shape (height, width)
 
-        return min_max_scale(image, np.float64(0), np.float64(1))
+        return percentile_min_max_scale(image, np.float64(0), np.float64(1))
 
+    def histogram_equalize(
+        self, arr: npt.NDArray[np.float64], bins: int = 1000
+    ) -> npt.NDArray[np.float64]:
+        counts, edges = np.histogram(arr, bins=bins)
 
-def histogram_equalize(arr: npt.NDArray[np.float64], bins: int = 1000):
-    counts, edges = np.histogram(arr, bins=bins)
+        cumulative_distribution = counts.cumsum() / counts.sum()  # normalized to [0, 1]
 
-    cumulative_distribution = counts.cumsum() / counts.sum()  # normalized to [0, 1]
+        # Average each pair of adjacent edges to get the centers
+        bin_centers = (edges[:-1] + edges[1:]) / 2
 
-    # Average each pair of adjacent edges to get the centers
-    bin_centers = (edges[:-1] + edges[1:]) / 2
-
-    # bin_centers=X and cumulutative_distribution=Y create a piecewise linear function that is the cumulative histogram
-    # but only has as much precision as the number of bins. We can interpolate the new values of arr from this histogram
-    return np.interp(arr, bin_centers, cumulative_distribution)
+        # bin_centers=X and cumulutative_distribution=Y create a piecewise linear function that is the cumulative histogram
+        # but only has as much precision as the number of bins. We can interpolate the new values of arr from this histogram
+        return np.asarray(
+            np.interp(arr, bin_centers, cumulative_distribution), dtype=np.float64
+        )
