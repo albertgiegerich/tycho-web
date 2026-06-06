@@ -1,3 +1,5 @@
+from rio_tiler.errors import TileOutsideBounds
+from rio_tiler.io import COGReader
 from backend.config import settings
 from backend.schemas import GetRasterRequest
 from backend.services.raster_operation_service import (
@@ -13,7 +15,7 @@ from backend.models import RasterFileName
 
 import rasterio
 
-from fastapi import Body, Query, Response, UploadFile
+from fastapi import Body, Query, Request, Response, UploadFile
 from backend.schemas import RasterPixel, RasterResponse
 from backend.services.file_store import get_file_store
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,6 +50,44 @@ GeoTiffServiceDep = Annotated[GeoTiffService, Depends(get_geotiff_service)]
 RasterOperationServiceDep = Annotated[
     RasterOperationService, Depends(get_raster_operation_service)
 ]
+
+
+raster_cache: dict[UUID, str] = {}
+
+
+@router.get("/{id}/tiles/{z}/{x}/{y}.png")
+async def get_tile(
+    request: Request, session: DbSession, id: UUID, z: int, x: int, y: int
+):
+
+    cache = request.app.state.raster_cache
+
+    if id not in cache:
+        print("Cache miss")
+        raster = await session.get(Raster, id)
+
+        if raster is None:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        cache[id] = raster.path
+    else:
+        print("Cache hit")
+
+    raster_path = cache[id]
+
+    try:
+        with COGReader(
+            input=f"{settings.data_root}/{raster_path}/{RasterFileName.COG.value}",
+            options={},
+        ) as cog:
+            img = cog.tile(x, y, z, indexes=[1, 2, 3])
+    except TileOutsideBounds:
+        return Response(status_code=204)
+
+    return Response(
+        content=img.render(img_format="PNG"),
+        media_type="image/png",
+    )
 
 
 @router.get("/{id}/pixel", operation_id="getPixel")

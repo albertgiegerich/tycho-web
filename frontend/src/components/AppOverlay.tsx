@@ -1,5 +1,5 @@
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { BitmapLayer, type DeckProps, type Layer } from "deck.gl";
+import { BitmapLayer, TileLayer, type DeckProps, type Layer } from "deck.gl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useControl, useMap, type LngLat } from "react-map-gl/maplibre";
 import {
@@ -147,22 +147,33 @@ const AppOverlay = () => {
   );
 
   const layers: Layer[] = useMemo(() => {
-    if (selectedRaster && rasterImageUrl) {
+    if (selectedRaster) {
       return [
-        new BitmapLayer({
-          id: `geotiff-bitmap`,
-          image: rasterImageUrl,
-          bounds: selectedRaster.bounds,
-          textureParameters: {
-            minFilter: "linear", // Use bilinear interpolation to blend the pixels when zoomed out
-            magFilter: "nearest", // When zoomed in show the individual pixels without interpolation
+        new TileLayer({
+          id: `tile-layer`,
+          data: `http://localhost:8000/rasters/${selectedRaster.id}/tiles/{z}/{x}/{y}.png`,
+          // bounds: selectedRaster.bounds,
+          renderSubLayers: (props) => {
+            console.log(props);
+
+            const [[west, south], [east, north]] = props.tile.boundingBox;
+
+            return new BitmapLayer(props, {
+              data: undefined,
+              image: props.data,
+              bounds: [west, south, east, north],
+              // textureParameters: {
+              //   minFilter: "linear", // Use bilinear interpolation to blend the pixels when zoomed out
+              //   magFilter: "nearest", // When zoomed in show the individual pixels without interpolation
+              // },
+            });
           },
         }),
       ];
     }
 
     return [];
-  }, [rasterImageUrl, selectedRaster]);
+  }, [selectedRaster]);
 
   const onClickMap = useCallback(
     (e: MapMouseEvent) => {
