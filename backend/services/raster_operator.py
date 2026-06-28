@@ -3,10 +3,11 @@ from itertools import pairwise
 
 import numpy as np
 import numpy.typing as npt
+from scipy.ndimage import convolve
 
 
-def get_radiometric_corrector() -> RadiometricCorrector:
-    return RadiometricCorrector()
+def get_raster_operator() -> RasterOperator:
+    return RasterOperator()
 
 
 MAX_R = 3.0
@@ -18,7 +19,7 @@ G_OFF_POW = G_OFF**GAMMA
 G_OFF_RANGE = (1 + G_OFF) ** GAMMA - G_OFF_POW
 
 
-class RadiometricCorrector:
+class RasterOperator:
 
     # this function is based on the default "true color" evalscript from Copernicus browser
     def true_color(self, input_arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -60,6 +61,23 @@ class RadiometricCorrector:
             image = np.where((start <= image) & (image < end), slice_bv, image)
 
         return image
+
+    def blur(
+        self, image: npt.NDArray[np.float64], kernel_size: int
+    ) -> npt.NDArray[np.float64]:
+
+        # Creates an N x N kernel where N=kernel_size where all values add up to 1 e.g.
+        # [
+        #   [0.25, 0.25],
+        #   [0.25, 0.25]
+        # ]
+        # for kernel_size = 2
+        kernel = np.full((kernel_size, kernel_size), 1 / (kernel_size**2))
+
+        number_of_bands = image.shape[0]
+        result = np.stack([convolve(image[i], kernel) for i in range(number_of_bands)])
+
+        return result
 
     def linear_stretch(
         self,

@@ -74,11 +74,16 @@ type ContrastEnhancement = Annotated[
 
 class RasterOperationId(StrEnum):
     DENSITY_SLICE = "density_slice"
+    BLUR = "blur"
 
 
 class DensitySliceOperation(DefaultConfigModel):
     id: Literal[RasterOperationId.DENSITY_SLICE]
     breaks: list[float]
 
+class BlurOperation(DefaultConfigModel):
+    id: Literal[RasterOperationId.BLUR]
+    kernel_size: int
 
-type RasterOperation = Annotated[DensitySliceOperation, Field(discriminator="id")]
+
+type RasterOperation = Annotated[DensitySliceOperation | BlurOperation, Field(discriminator="id")]

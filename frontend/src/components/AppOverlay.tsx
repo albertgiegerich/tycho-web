@@ -14,6 +14,7 @@ import type {
   RasterOperation,
   RasterResponse,
 } from "../generated";
+import BlurDialog from "./BlurDialog";
 import DensitySliceDialog from "./DensitySliceDialog";
 import MapClickHandler from "./MapClickHandler";
 import type { MapMouseEvent } from "maplibre-gl";
@@ -61,6 +62,7 @@ const AppOverlay = () => {
     [],
   );
   const [densitySliceDialogOpen, setDensitySliceDialogOpen] = useState(false);
+  const [blurDialogOpen, setBlurDialogOpen] = useState(false);
   const [bandOrder, setBandOrder] = useState<number[]>([1, 2, 3]);
   const [contrastEnhancementId, setContrastEnhancementId] = useState<
     ContrastEnhancement["id"] | null
@@ -307,6 +309,14 @@ const AppOverlay = () => {
             >
               Density Slice
             </Button>
+            <Button
+              onClick={() => setBlurDialogOpen(true)}
+              variant="contained"
+              color="primary"
+              disabled={selectedRaster === null}
+            >
+              Blur
+            </Button>
 
             <Button onClick={onReset} variant="contained" color="primary">
               Reset
@@ -323,6 +333,13 @@ const AppOverlay = () => {
           </>
         )}
       </SideBar>
+      <BlurDialog
+        open={blurDialogOpen}
+        onClose={() => setBlurDialogOpen(false)}
+        onApply={(kernelSize) =>
+          setActiveOperations((prev) => [...prev, { id: "blur", kernelSize }])
+        }
+      />
       <DensitySliceDialog
         open={densitySliceDialogOpen}
         onClose={() => setDensitySliceDialogOpen(false)}

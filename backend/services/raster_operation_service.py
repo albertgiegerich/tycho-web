@@ -4,16 +4,16 @@ import numpy as np
 import numpy.typing as npt
 
 from backend.schemas import RasterOperation, RasterOperationId
-from backend.services.radiometric_correction import RadiometricCorrector
+from backend.services.raster_operator import RasterOperator
 
 
 def get_raster_operation_service():
-    return RasterOperationService(RadiometricCorrector())
+    return RasterOperationService(RasterOperator())
 
 
 class RasterOperationService:
-    def __init__(self, radiometric_corrector: RadiometricCorrector):
-        self.radiometric_corrector = radiometric_corrector
+    def __init__(self, raster_operator: RasterOperator):
+        self.raster_operator = raster_operator
 
     def apply_contrast_enhancement(
         self, arr: npt.NDArray[np.float64], contrast_enhancement: ContrastEnhancement
@@ -21,13 +21,13 @@ class RasterOperationService:
         match contrast_enhancement.id:
 
             case ContrastEnhancementId.TRUE_COLOR:
-                return self.radiometric_corrector.true_color(arr)
+                return self.raster_operator.true_color(arr)
 
             case ContrastEnhancementId.LINEAR_STRETCH:
-                return self.radiometric_corrector.linear_stretch(arr)
+                return self.raster_operator.linear_stretch(arr)
 
             case ContrastEnhancementId.EQUALIZE_HISTOGRAM:
-                return self.radiometric_corrector.histogram_equalize(arr)
+                return self.raster_operator.histogram_equalize(arr)
 
     def apply_operations(
         self,
@@ -45,6 +45,8 @@ class RasterOperationService:
     ) -> npt.NDArray[np.float64]:
         match operation.id:
             case RasterOperationId.DENSITY_SLICE:
-                return self.radiometric_corrector.density_slice(
+                return self.raster_operator.density_slice(
                     arr, np.array(operation.breaks)
                 )
+            case RasterOperationId.BLUR:
+                return self.raster_operator.blur(arr, operation.kernel_size)
