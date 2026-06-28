@@ -51,11 +51,11 @@ class RadiometricCorrector:
         self, image: npt.NDArray[np.float64], breaks: npt.NDArray[np.float64]
     ) -> npt.NDArray[np.float64]:
 
-        step_size = 1.0 / (breaks.size + 1)
+        brightness_value_multiplier = 1.0 / (breaks.size + 1)
 
         breaks = np.array([0, *breaks, 1])
         for i, (start, end) in enumerate(pairwise(breaks)):
-            slice_bv = np.float64(i * step_size)
+            slice_bv = np.float64(i * brightness_value_multiplier)
 
             image = np.where((start <= image) & (image < end), slice_bv, image)
 
