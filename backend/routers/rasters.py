@@ -129,28 +129,22 @@ async def get_raster(
 
     path = f"{settings.data_root}/{raster.path}/{RasterFileName.COG.value}"
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with rasterio.open(path) as dataset:
+        raster_image = dataset.read(request_payload.band_order)
 
-        with rasterio.open(path) as dataset:
-            raster_image = dataset.read(request_payload.band_order)
+        raster_image = normalize_0_to_1(raster_image)
 
-            raster_image = normalize_0_to_1(raster_image)
+        if request_payload.operations:
+            raster_image = raster_operation_service.apply_operations(
+                raster_image, request_payload.operations
+            )
 
-            if request_payload.operations:
-                raster_image = raster_operation_service.apply_operations(
-                    raster_image, request_payload.operations
-                )
+        if request_payload.contrast_enhancement:
+            raster_image = raster_operation_service.apply_contrast_enhancement(
+                raster_image, request_payload.contrast_enhancement
+            )
 
-            if request_payload.contrast_enhancement:
-                raster_image = raster_operation_service.apply_contrast_enhancement(
-                    raster_image, request_payload.contrast_enhancement
-                )
-
-            png_file_path = f"{tmp_dir}/png.tif"
-            geotiff_service.save_as_png(raster_image, png_file_path)
-
-            with open(png_file_path, "rb") as f:
-                png_bytes = f.read()
+        png_bytes = geotiff_service.save_as_png(raster_image)
 
     return Response(png_bytes, media_type="image/png")
 
